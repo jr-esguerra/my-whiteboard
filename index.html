@@ -26,6 +26,38 @@
             font-family: 'Arial', sans-serif;
             font-size: 14px;
         }
+        .note .delete-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .note .color-change-btn {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            background-color: gray;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         #toolbar {
             position: fixed;
             top: 10px;
@@ -40,7 +72,7 @@
             gap: 10px;
             align-items: center;
         }
-        #addNoteBtn {
+        #addNoteBtn, #clearCanvasBtn {
             cursor: pointer;
             padding: 5px 10px;
             background-color: #007bff;
@@ -64,6 +96,7 @@
 <body>
     <div id="toolbar">
         <button id="addNoteBtn">Add Sticky Note</button>
+        <button id="clearCanvasBtn">Clear Canvas</button>
         <div class="color-option" style="background-color: #ffd1dc;" data-color="#ffd1dc"></div>
         <div class="color-option" style="background-color: #d1c4e9;" data-color="#d1c4e9"></div>
         <div class="color-option" style="background-color: #bbdefb;" data-color="#bbdefb"></div>
@@ -73,10 +106,13 @@
 
     <script>
         let noteId = 0;
-        const addNoteBtn = document.getElementById('addNoteBtn');
         let selectedColor = '#ffd1dc'; // Default color
 
+        const addNoteBtn = document.getElementById('addNoteBtn');
+        const clearCanvasBtn = document.getElementById('clearCanvasBtn');
+
         addNoteBtn.addEventListener('click', addStickyNote);
+        clearCanvasBtn.addEventListener('click', clearCanvas);
 
         document.querySelectorAll('.color-option').forEach(option => {
             option.addEventListener('click', () => {
@@ -96,6 +132,19 @@
             note.setAttribute('draggable', true);
             note.setAttribute('id', `note-${noteId++}`);
 
+            const deleteBtn = document.createElement('button');
+            deleteBtn.classList.add('delete-btn');
+            deleteBtn.innerHTML = '&times;';
+            deleteBtn.addEventListener('click', () => deleteNote(note));
+
+            const colorChangeBtn = document.createElement('button');
+            colorChangeBtn.classList.add('color-change-btn');
+            colorChangeBtn.innerHTML = '&#9881;';
+            colorChangeBtn.addEventListener('click', () => changeNoteColor(note));
+
+            note.appendChild(deleteBtn);
+            note.appendChild(colorChangeBtn);
+
             note.addEventListener('click', bringToFront);
             note.addEventListener('input', saveNotesState);
             note.addEventListener('dragstart', dragStart);
@@ -109,6 +158,25 @@
         function bringToFront(e) {
             document.querySelectorAll('.note').forEach(note => note.style.zIndex = 1);
             e.target.style.zIndex = 10;
+        }
+
+        function deleteNote(note) {
+            note.remove();
+            saveNotesState();
+        }
+
+        function changeNoteColor(note) {
+            const newColor = selectedColor;
+            note.style.backgroundColor = newColor;
+            saveNotesState();
+        }
+
+        function clearCanvas() {
+            const confirmation = confirm("Are you sure you want to delete all sticky notes?");
+            if (confirmation) {
+                document.querySelectorAll('.note').forEach(note => note.remove());
+                localStorage.removeItem('notesData');
+            }
         }
 
         function saveNotesState() {
@@ -136,6 +204,19 @@
                     note.style.backgroundColor = noteData.backgroundColor;
                     note.setAttribute('draggable', true);
                     note.setAttribute('id', noteData.id);
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.classList.add('delete-btn');
+                    deleteBtn.innerHTML = '&times;';
+                    deleteBtn.addEventListener('click', () => deleteNote(note));
+
+                    const colorChangeBtn = document.createElement('button');
+                    colorChangeBtn.classList.add('color-change-btn');
+                    colorChangeBtn.innerHTML = '&#9881;';
+                    colorChangeBtn.addEventListener('click', () => changeNoteColor(note));
+
+                    note.appendChild(deleteBtn);
+                    note.appendChild(colorChangeBtn);
 
                     note.addEventListener('click', bringToFront);
                     note.addEventListener('input', saveNotesState);
@@ -183,4 +264,3 @@
     </script>
 </body>
 </html>
-
