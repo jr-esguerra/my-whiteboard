@@ -3,352 +3,220 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Whiteboard with Sticky Notes</title>
+    <title>Sticky Notes App</title>
     <style>
-        body, html {
+        body {
+            font-family: Helvetica, Arial, sans-serif;
             margin: 0;
             padding: 0;
-            height: 100%;
-            overflow: hidden;
-            font-family: 'Helvetica', sans-serif;
-            background-color: #f4f4f4;
+            background-color: #f0f0f0;
         }
-        #banner {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            background-color: #007bff;
-            color: white;
+
+        header {
+            background: #e0e0e0;
             text-align: center;
-            padding: 10px;
+            padding: 20px;
             font-size: 24px;
-            z-index: 2;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            font-weight: bold;
         }
-        .note {
-            width: 150px;
-            height: 150px;
+
+        #toolbar {
+            background: #e0e0e0;
             padding: 10px;
-            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            position: absolute;
-            cursor: move;
-            z-index: 1;
-            overflow: hidden;
-            box-sizing: border-box;
-            font-family: 'Helvetica', sans-serif;
-            font-size: 14px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
         }
-        .note .delete-btn, .note .star-btn {
-            position: absolute;
-            font-size: 14px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: white;
-            z-index: 2;
+
+        #toolbar button {
+            margin: 0 5px;
         }
-        .note .delete-btn {
-            top: 5px;
-            right: 5px;
-            background-color: red;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
+
+        #board-selector {
             display: flex;
             align-items: center;
+        }
+
+        .board-option {
+            margin: 0 5px;
+            cursor: pointer;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+
+        .board-option.selected {
+            background-color: #ddd;
+        }
+
+        #boards-container {
+            display: flex;
             justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
         }
-        .note .star-btn {
-            bottom: 5px;
-            right: 5px;
-            font-size: 18px;
-            color: gold;
+
+        .board {
+            position: relative;
+            width: 80%;
+            height: calc(100vh - 150px);
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            overflow: auto;
+            background: #fff;
         }
+
+        .note {
+            position: absolute;
+            background-color: #ffeb3b;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+            min-width: 100px;
+            min-height: 100px;
+        }
+
         .note-content {
             width: 100%;
-            height: calc(100% - 30px); /* Adjusted to accommodate the star and delete buttons */
-            overflow: auto;
-            box-sizing: border-box;
-            text-align: center;
-            font-weight: bold;
+            height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
         }
-        #toolbar {
-            position: fixed;
-            top: 60px;
-            left: 10px;
-            z-index: 2;
-            background-color: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 10px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        #addNoteBtn, #clearCanvasBtn {
-            cursor: pointer;
-            padding: 5px 10px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-        .color-option {
-            width: 25px;
-            height: 25px;
+
+        .star {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet);
             border-radius: 50%;
             cursor: pointer;
-            border: 2px solid transparent;
-            position: relative;
         }
-        .color-option.selected {
-            border-color: #007bff;
-        }
-        .color-option.selected::after {
-            content: '\2713'; /* Check-mark Unicode character */
+
+        .star::after {
+            content: '★';
+            font-size: 16px;
+            color: #f00;
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: #007bff;
-            font-size: 18px;
+            pointer-events: none;
         }
-        .star-btn.rainbow {
-            animation: rainbow 2s infinite;
-        }
-        @keyframes rainbow {
-            0% { color: red; }
-            14% { color: orange; }
-            28% { color: yellow; }
-            42% { color: green; }
-            57% { color: blue; }
-            71% { color: indigo; }
-            85% { color: violet; }
-            100% { color: red; }
+
+        .color-option.selected {
+            border: 2px solid #000;
         }
     </style>
 </head>
 <body>
-    <div id="banner">٩(◕‿◕｡)۶</div>
+    <header>
+        <h1>٩(◕‿◕｡)۶</h1>
+    </header>
     <div id="toolbar">
-        <button id="addNoteBtn">Add Sticky Note</button>
-        <button id="clearCanvasBtn">Clear Canvas</button>
-        <div class="color-option" style="background-color: #ffd1dc;" data-color="#ffd1dc"></div>
-        <div class="color-option" style="background-color: #d1c4e9;" data-color="#d1c4e9"></div>
-        <div class="color-option" style="background-color: #bbdefb;" data-color="#bbdefb"></div>
-        <div class="color-option" style="background-color: #c8e6c9;" data-color="#c8e6c9"></div>
-        <div class="color-option" style="background-color: #ffe0b2;" data-color="#ffe0b2"></div>
+        <button class="color-option" data-color="#FFC0CB"></button> <!-- Pink -->
+        <button class="color-option" data-color="#E0BBE4"></button> <!-- Purple -->
+        <button class="color-option" data-color="#A2C2E0"></button> <!-- Blue -->
+        <button class="color-option" data-color="#A9DFBF"></button> <!-- Green -->
+        <button class="color-option" data-color="#FAD02E"></button> <!-- Orange -->
+        <button id="clear-canvas">Clear Canvas</button>
+        <button id="new-board">New Board</button>
+        <div id="board-selector">
+            <!-- Board options will be dynamically added here -->
+        </div>
     </div>
-
+    <div id="boards-container">
+        <!-- Boards will be dynamically added here -->
+    </div>
     <script>
-        let noteId = 0;
-        let selectedColor = '#ffd1dc'; // Default color
-        let selectedNote = null;
+        document.addEventListener('DOMContentLoaded', () => {
+            const toolbar = document.getElementById('toolbar');
+            const boardsContainer = document.getElementById('boards-container');
+            const boardSelector = document.getElementById('board-selector');
+            let currentColor = '#FFEB3B'; // Default color
+            let currentBoard = null;
 
-        const addNoteBtn = document.getElementById('addNoteBtn');
-        const clearCanvasBtn = document.getElementById('clearCanvasBtn');
+            // Function to create a new board
+            function createBoard(name) {
+                const board = document.createElement('div');
+                board.classList.add('board');
+                board.id = name;
+                
+                const boardOption = document.createElement('button');
+                boardOption.classList.add('board-option');
+                boardOption.textContent = name;
+                boardOption.addEventListener('click', () => selectBoard(name));
+                boardSelector.appendChild(boardOption);
 
-        addNoteBtn.addEventListener('click', addStickyNote);
-        clearCanvasBtn.addEventListener('click', clearCanvas);
+                boardsContainer.appendChild(board);
 
-        document.querySelectorAll('.color-option').forEach(option => {
-            option.addEventListener('click', () => {
-                document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
-                option.classList.add('selected');
-                selectedColor = option.dataset.color;
-                if (selectedNote) {
-                    selectedNote.style.backgroundColor = selectedColor;
-                    saveNotesState();
-                }
-            });
-        });
-
-        function addStickyNote() {
-            const note = document.createElement('div');
-            note.classList.add('note');
-            note.style.top = `${(window.innerHeight / 2) - 75}px`;
-            note.style.left = `${(window.innerWidth / 2) - 75}px`;
-            note.style.backgroundColor = selectedColor;
-            note.setAttribute('draggable', true);
-            note.setAttribute('id', `note-${noteId++}`);
-
-            const deleteBtn = document.createElement('button');
-            deleteBtn.classList.add('delete-btn');
-            deleteBtn.innerHTML = '&times;';
-            deleteBtn.addEventListener('click', () => deleteNote(note));
-
-            const starBtn = document.createElement('button');
-            starBtn.classList.add('star-btn');
-            starBtn.innerHTML = '⭐';
-            starBtn.addEventListener('click', () => {
-                starBtn.classList.toggle('rainbow');
-                saveNotesState();
-            });
-
-            const noteContent = document.createElement('div');
-            noteContent.classList.add('note-content');
-            noteContent.contentEditable = true;
-            noteContent.addEventListener('input', () => {
-                noteContent.style.textAlign = 'center';
-                noteContent.style.fontWeight = 'bold';
-            });
-
-            note.appendChild(deleteBtn);
-            note.appendChild(starBtn);
-            note.appendChild(noteContent);
-
-            note.addEventListener('click', () => {
-                bringToFront(note);
-                selectedNote = note;
-                document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
-                const selectedOption = Array.from(document.querySelectorAll('.color-option')).find(opt => opt.dataset.color === note.style.backgroundColor);
-                if (selectedOption) {
-                    selectedOption.classList.add('selected');
-                }
-            });
-
-            note.addEventListener('input', saveNotesState);
-            note.addEventListener('dragstart', dragStart);
-            note.addEventListener('dragend', dragEnd);
-
-            document.body.appendChild(note);
-            bringToFront(note);
-            saveNotesState();
-        }
-
-        function bringToFront(note) {
-            document.querySelectorAll('.note').forEach(n => n.style.zIndex = 1);
-            note.style.zIndex = 10;
-        }
-
-        function deleteNote(note) {
-            note.remove();
-            if (selectedNote === note) {
-                selectedNote = null;
-                document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+                selectBoard(name);
             }
-            saveNotesState();
-        }
 
-        function clearCanvas() {
-            const confirmation = confirm("Are you sure you want to delete all sticky notes?");
-            if (confirmation) {
-                document.querySelectorAll('.note').forEach(note => note.remove());
-                saveNotesState();
+            // Function to select a board
+            function selectBoard(name) {
+                if (currentBoard) {
+                    document.getElementById(currentBoard).style.display = 'none';
+                    document.querySelector(`.board-option.selected`).classList.remove('selected');
+                }
+
+                currentBoard = name;
+                document.getElementById(name).style.display = 'block';
+                document.querySelector(`.board-option:contains('${name}')`).classList.add('selected');
             }
-        }
 
-        function dragStart(e) {
-            e.dataTransfer.setData('text/plain', e.target.id);
-            setTimeout(() => {
-                e.target.style.display = 'none';
-            }, 0);
-        }
+            // Function to create a new sticky note
+            function createNote() {
+                if (!currentBoard) return;
 
-        function dragEnd(e) {
-            e.target.style.display = 'block';
-            e.target.style.top = `${e.clientY - 75}px`;
-            e.target.style.left = `${e.clientX - 75}px`;
-
-            bringToFront(e.target);
-            saveNotesState();
-        }
-
-        document.body.addEventListener('dragover', function(e) {
-            e.preventDefault();
-        });
-
-        document.body.addEventListener('drop', function(e) {
-            e.preventDefault();
-            const id = e.dataTransfer.getData('text');
-            const note = document.getElementById(id);
-            note.style.top = `${e.clientY - 75}px`;
-            note.style.left = `${e.clientX - 75}px`;
-
-            bringToFront(note);
-            saveNotesState();
-        });
-
-        function saveNotesState() {
-            const notes = Array.from(document.querySelectorAll('.note')).map(note => ({
-                id: note.id,
-                top: note.style.top,
-                left: note.style.left,
-                backgroundColor: note.style.backgroundColor,
-                content: note.querySelector('.note-content').innerHTML,
-                isStarred: note.querySelector('.star-btn').classList.contains('rainbow')
-            }));
-            localStorage.setItem('notes', JSON.stringify(notes));
-        }
-
-        function loadNotesState() {
-            const notes = JSON.parse(localStorage.getItem('notes') || '[]');
-            notes.forEach(noteData => {
+                const board = document.getElementById(currentBoard);
                 const note = document.createElement('div');
                 note.classList.add('note');
-                note.style.top = noteData.top;
-                note.style.left = noteData.left;
-                note.style.backgroundColor = noteData.backgroundColor;
-                note.setAttribute('draggable', true);
-                note.setAttribute('id', noteData.id);
-
-                const deleteBtn = document.createElement('button');
-                deleteBtn.classList.add('delete-btn');
-                deleteBtn.innerHTML = '&times;';
-                deleteBtn.addEventListener('click', () => deleteNote(note));
-
-                const starBtn = document.createElement('button');
-                starBtn.classList.add('star-btn');
-                starBtn.innerHTML = '⭐';
-                if (noteData.isStarred) {
-                    starBtn.classList.add('rainbow');
-                }
-                starBtn.addEventListener('click', () => {
-                    starBtn.classList.toggle('rainbow');
-                    saveNotesState();
-                });
+                note.style.backgroundColor = currentColor;
 
                 const noteContent = document.createElement('div');
                 noteContent.classList.add('note-content');
-                noteContent.contentEditable = true;
-                noteContent.innerHTML = noteData.content;
-                noteContent.addEventListener('input', () => {
-                    noteContent.style.textAlign = 'center';
-                    noteContent.style.fontWeight = 'bold';
-                });
+                noteContent.contentEditable = 'true';
+                noteContent.style.fontWeight = 'bold';
+                noteContent.style.textAlign = 'center';
 
-                note.appendChild(deleteBtn);
-                note.appendChild(starBtn);
                 note.appendChild(noteContent);
+                board.appendChild(note);
 
                 note.addEventListener('click', () => {
-                    bringToFront(note);
-                    selectedNote = note;
-                    document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
-                    const selectedOption = Array.from(document.querySelectorAll('.color-option')).find(opt => opt.dataset.color === note.style.backgroundColor);
-                    if (selectedOption) {
-                        selectedOption.classList.add('selected');
-                    }
+                    board.appendChild(note); // Bring to front
                 });
+            }
 
-                note.addEventListener('input', saveNotesState);
-                note.addEventListener('dragstart', dragStart);
-                note.addEventListener('dragend', dragEnd);
-
-                document.body.appendChild(note);
-                bringToFront(note);
+            // Handle toolbar actions
+            toolbar.addEventListener('click', (event) => {
+                if (event.target.classList.contains('color-option')) {
+                    currentColor = event.target.dataset.color;
+                    updateColorSelection(event.target);
+                } else if (event.target.id === 'clear-canvas') {
+                    if (confirm('Are you sure you want to clear all notes?')) {
+                        document.getElementById(currentBoard).innerHTML = '';
+                    }
+                } else if (event.target.id === 'new-board') {
+                    const boardName = prompt('Enter board name:');
+                    if (boardName) createBoard(boardName);
+                }
             });
-        }
 
-        // Load sticky notes on page load
-        loadNotesState();
+            function updateColorSelection(selectedButton) {
+                document.querySelectorAll('.color-option').forEach(button => {
+                    button.classList.remove('selected');
+                });
+                selectedButton.classList.add('selected');
+            }
+
+            // Create the initial board
+            createBoard('Board 1');
+        });
     </script>
 </body>
 </html>
