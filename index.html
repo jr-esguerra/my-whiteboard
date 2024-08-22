@@ -38,7 +38,6 @@
             overflow: hidden;
             box-sizing: border-box;
             font-family: 'Helvetica', sans-serif;
-            font-size: 14px;
         }
         .note .delete-btn {
             position: absolute;
@@ -63,10 +62,13 @@
             height: calc(100% - 10px);
             box-sizing: border-box;
             text-align: center;
-            font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
+            font-weight: bold;
+            white-space: pre-wrap; /* Preserve whitespace */
+            word-wrap: break-word; /* Break long words */
         }
         #toolbar {
             position: fixed;
@@ -154,6 +156,7 @@
                 selectedColor = option.dataset.color;
                 if (selectedNote) {
                     selectedNote.style.backgroundColor = selectedColor;
+                    adjustTextSize(selectedNote.querySelector('.note-content'));
                     saveNotesState();
                 }
             });
@@ -180,6 +183,7 @@
             noteContent.addEventListener('input', () => {
                 noteContent.style.textAlign = 'center';
                 noteContent.style.fontWeight = 'bold';
+                adjustTextSize(noteContent);
             });
 
             note.appendChild(deleteBtn);
@@ -202,6 +206,19 @@
             document.body.appendChild(note);
             bringToFront(note);
             saveNotesState();
+        }
+
+        function adjustTextSize(contentDiv) {
+            const maxFontSize = 40; // Maximum font size
+            let fontSize = maxFontSize;
+            contentDiv.style.fontSize = fontSize + 'px';
+
+            // Adjust the font size to fit the note
+            while (contentDiv.scrollHeight > contentDiv.clientHeight || contentDiv.scrollWidth > contentDiv.clientWidth) {
+                fontSize--;
+                contentDiv.style.fontSize = fontSize + 'px';
+                if (fontSize <= 10) break; // Minimum font size
+            }
         }
 
         function bringToFront(note) {
@@ -228,22 +245,6 @@
                 document.querySelectorAll('.note').forEach(note => note.remove());
                 saveNotesState();
             }
-        }
-
-        function dragStart(e) {
-            e.dataTransfer.setData('text/plain', e.target.id);
-            setTimeout(() => {
-                e.target.style.display = 'none';
-            }, 0);
-        }
-
-        function dragEnd(e) {
-            e.target.style.display = 'block';
-            e.target.style.top = `${e.clientY - 75}px`;
-            e.target.style.left = `${e.clientX - 75}px`;
-
-            bringToFront(e.target);
-            saveNotesState();
         }
 
         function saveNotesState() {
@@ -281,6 +282,7 @@
                 noteContent.addEventListener('input', () => {
                     noteContent.style.textAlign = 'center';
                     noteContent.style.fontWeight = 'bold';
+                    adjustTextSize(noteContent);
                 });
 
                 note.appendChild(deleteBtn);
@@ -302,6 +304,7 @@
 
                 document.body.appendChild(note);
                 bringToFront(note);
+                adjustTextSize(noteContent);
             });
         }
 
