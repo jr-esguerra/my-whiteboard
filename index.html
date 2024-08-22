@@ -1,1 +1,216 @@
-<!DOCTYPE html><html lang="en"><head>    <meta charset="UTF-8">    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>Notion Whiteboard with Sticky Notes</title>    <style>        body, html {            margin: 0;            padding: 0;            height: 100%;            overflow: hidden;            font-family: Arial, sans-serif;        }        canvas {            background-color: #fff;            display: block;            position: absolute;            top: 0;            left: 0;            z-index: 0;        }        .note {            width: 150px;            height: 150px;            padding: 10px;            background-color: #fef68a;            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);            border-radius: 8px;            position: absolute;            cursor: move;            z-index: 1;        }        #toolbar {            position: fixed;            top: 10px;            left: 10px;            z-index: 2;            background-color: #333;            color: white;            padding: 10px;            border-radius: 8px;            display: flex;            gap: 10px;        }        #addNoteBtn {            cursor: pointer;            padding: 5px 10px;            background-color: #007bff;            color: white;            border: none;            border-radius: 5px;        }    </style></head><body>    <div id="toolbar">        <button id="addNoteBtn">Add Sticky Note</button>    </div>    <canvas id="whiteboard"></canvas>    <script>        const canvas = document.getElementById('whiteboard');        const ctx = canvas.getContext('2d');        canvas.width = window.innerWidth;        canvas.height = window.innerHeight;        let drawing = false;        function startPosition(e) {            drawing = true;            draw(e);        }        function endPosition() {            drawing = false;            ctx.beginPath();        }        function draw(e) {            if (!drawing) return;            ctx.lineWidth = 5;            ctx.lineCap = 'round';            ctx.strokeStyle = '#000';            ctx.lineTo(e.clientX, e.clientY);            ctx.stroke();            ctx.beginPath();            ctx.moveTo(e.clientX, e.clientY);        }        canvas.addEventListener('mousedown', startPosition);        canvas.addEventListener('mouseup', endPosition);        canvas.addEventListener('mousemove', draw);        // Sticky Notes Functionality        let noteId = 0;        const addNoteBtn = document.getElementById('addNoteBtn');        addNoteBtn.addEventListener('click', addStickyNote);        function addStickyNote() {            const note = document.createElement('div');            note.classList.add('note');            note.contentEditable = true;            note.style.top = `${Math.random() * (window.innerHeight - 200)}px`;            note.style.left = `${Math.random() * (window.innerWidth - 200)}px`;            note.setAttribute('draggable', true);            note.setAttribute('id', `note-${noteId++}`);            note.addEventListener('dragstart', dragStart);            note.addEventListener('dragend', dragEnd);            document.body.appendChild(note);        }        function dragStart(e) {            e.dataTransfer.setData('text/plain', e.target.id);            setTimeout(() => {                e.target.style.display = 'none';            }, 0);        }        function dragEnd(e) {            e.target.style.display = 'block';            e.target.style.top = `${e.clientY - 75}px`;            e.target.style.left = `${e.clientX - 75}px`;        }        document.body.addEventListener('dragover', function(e) {            e.preventDefault();        });        document.body.addEventListener('drop', function(e) {            e.preventDefault();            const id = e.dataTransfer.getData('text');            const note = document.getElementById(id);            note.style.top = `${e.clientY - 75}px`;            note.style.left = `${e.clientX - 75}px`;        });    </script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notion Whiteboard with Sticky Notes</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            background-color: #fff;
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+        .note {
+            width: 150px;
+            height: 150px;
+            padding: 10px;
+            background-color: #fef68a;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            position: absolute;
+            cursor: move;
+            z-index: 1;
+            overflow: auto;
+        }
+        #toolbar {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 2;
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            gap: 10px;
+        }
+        #addNoteBtn {
+            cursor: pointer;
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="toolbar">
+        <button id="addNoteBtn">Add Sticky Note</button>
+    </div>
+    <canvas id="whiteboard"></canvas>
+
+    <script>
+        const canvas = document.getElementById('whiteboard');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let drawing = false;
+        let drawingData = [];
+
+        function startPosition(e) {
+            drawing = true;
+            draw(e);
+        }
+
+        function endPosition() {
+            drawing = false;
+            ctx.beginPath();
+            saveCanvasState();
+        }
+
+        function draw(e) {
+            if (!drawing) return;
+
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#000';
+
+            ctx.lineTo(e.clientX, e.clientY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(e.clientX, e.clientY);
+
+            // Store drawing data
+            drawingData.push({ x: e.clientX, y: e.clientY });
+        }
+
+        function saveCanvasState() {
+            localStorage.setItem('drawingData', JSON.stringify(drawingData));
+        }
+
+        function loadCanvasState() {
+            const savedDrawingData = JSON.parse(localStorage.getItem('drawingData'));
+            if (savedDrawingData) {
+                ctx.beginPath();
+                for (let i = 0; i < savedDrawingData.length; i++) {
+                    const point = savedDrawingData[i];
+                    if (i === 0) {
+                        ctx.moveTo(point.x, point.y);
+                    } else {
+                        ctx.lineTo(point.x, point.y);
+                    }
+                }
+                ctx.stroke();
+            }
+        }
+
+        // Load canvas state on page load
+        loadCanvasState();
+
+        canvas.addEventListener('mousedown', startPosition);
+        canvas.addEventListener('mouseup', endPosition);
+        canvas.addEventListener('mousemove', draw);
+
+        // Sticky Notes Functionality
+        let noteId = 0;
+        const addNoteBtn = document.getElementById('addNoteBtn');
+
+        addNoteBtn.addEventListener('click', addStickyNote);
+
+        function addStickyNote() {
+            const note = document.createElement('div');
+            note.classList.add('note');
+            note.contentEditable = true;
+            note.style.top = `${Math.random() * (window.innerHeight - 200)}px`;
+            note.style.left = `${Math.random() * (window.innerWidth - 200)}px`;
+            note.setAttribute('draggable', true);
+            note.setAttribute('id', `note-${noteId++}`);
+
+            note.addEventListener('input', saveNotesState);
+            note.addEventListener('dragstart', dragStart);
+            note.addEventListener('dragend', dragEnd);
+
+            document.body.appendChild(note);
+
+            saveNotesState();
+        }
+
+        function saveNotesState() {
+            const notes = document.querySelectorAll('.note');
+            const notesData = Array.from(notes).map(note => ({
+                id: note.id,
+                content: note.innerHTML,
+                top: note.style.top,
+                left: note.style.left
+            }));
+            localStorage.setItem('notesData', JSON.stringify(notesData));
+        }
+
+        function loadNotesState() {
+            const savedNotesData = JSON.parse(localStorage.getItem('notesData'));
+            if (savedNotesData) {
+                savedNotesData.forEach(noteData => {
+                    const note = document.createElement('div');
+                    note.classList.add('note');
+                    note.contentEditable = true;
+                    note.innerHTML = noteData.content;
+                    note.style.top = noteData.top;
+                    note.style.left = noteData.left;
+                    note.setAttribute('draggable', true);
+                    note.setAttribute('id', noteData.id);
+
+                    note.addEventListener('input', saveNotesState);
+                    note.addEventListener('dragstart', dragStart);
+                    note.addEventListener('dragend', dragEnd);
+
+                    document.body.appendChild(note);
+                });
+            }
+        }
+
+        function dragStart(e) {
+            e.dataTransfer.setData('text/plain', e.target.id);
+            setTimeout(() => {
+                e.target.style.display = 'none';
+            }, 0);
+        }
+
+        function dragEnd(e) {
+            e.target.style.display = 'block';
+            e.target.style.top = `${e.clientY - 75}px`;
+            e.target.style.left = `${e.clientX - 75}px`;
+
+            saveNotesState();
+        }
+
+        document.body.addEventListener('dragover', function(e) {
+            e.preventDefault();
+        });
+
+        document.body.addEventListener('drop', function(e) {
+            e.preventDefault();
+            const id = e.dataTransfer.getData('text');
+            const note = document.getElementById(id);
+            note.style.top = `${e.clientY - 75}px`;
+            note.style.left = `${e.clientX - 75}px`;
+
+            saveNotesState();
+        });
+
+        // Load sticky notes on page load
+        loadNotesState();
+    </script>
+</body>
+</html>
