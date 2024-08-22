@@ -25,6 +25,7 @@
             overflow: auto;
             font-family: 'Arial', sans-serif;
             font-size: 14px;
+            box-sizing: border-box; /* Ensures padding is included in the element's total width and height */
         }
         .note .delete-btn {
             position: absolute;
@@ -41,6 +42,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 2; /* Ensure it is above content */
         }
         .note .color-change-btn {
             position: absolute;
@@ -57,6 +59,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 2; /* Ensure it is above content */
         }
         #toolbar {
             position: fixed;
@@ -90,6 +93,12 @@
         }
         .color-option.selected {
             border-color: #007bff;
+        }
+        .note-content {
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            box-sizing: border-box; /* Ensures padding is included in the element's total width and height */
         }
     </style>
 </head>
@@ -125,7 +134,6 @@
         function addStickyNote() {
             const note = document.createElement('div');
             note.classList.add('note');
-            note.contentEditable = true;
             note.style.top = `${Math.random() * (window.innerHeight - 200)}px`;
             note.style.left = `${Math.random() * (window.innerWidth - 200)}px`;
             note.style.backgroundColor = selectedColor;
@@ -142,8 +150,13 @@
             colorChangeBtn.innerHTML = '&#9881;';
             colorChangeBtn.addEventListener('click', () => changeNoteColor(note));
 
+            const noteContent = document.createElement('div');
+            noteContent.classList.add('note-content');
+            noteContent.contentEditable = true;
+
             note.appendChild(deleteBtn);
             note.appendChild(colorChangeBtn);
+            note.appendChild(noteContent);
 
             note.addEventListener('click', bringToFront);
             note.addEventListener('input', saveNotesState);
@@ -183,7 +196,7 @@
             const notes = document.querySelectorAll('.note');
             const notesData = Array.from(notes).map(note => ({
                 id: note.id,
-                content: note.innerHTML,
+                content: note.querySelector('.note-content').innerHTML,
                 top: note.style.top,
                 left: note.style.left,
                 backgroundColor: note.style.backgroundColor
@@ -197,8 +210,6 @@
                 savedNotesData.forEach(noteData => {
                     const note = document.createElement('div');
                     note.classList.add('note');
-                    note.contentEditable = true;
-                    note.innerHTML = noteData.content;
                     note.style.top = noteData.top;
                     note.style.left = noteData.left;
                     note.style.backgroundColor = noteData.backgroundColor;
@@ -215,8 +226,14 @@
                     colorChangeBtn.innerHTML = '&#9881;';
                     colorChangeBtn.addEventListener('click', () => changeNoteColor(note));
 
+                    const noteContent = document.createElement('div');
+                    noteContent.classList.add('note-content');
+                    noteContent.contentEditable = true;
+                    noteContent.innerHTML = noteData.content;
+
                     note.appendChild(deleteBtn);
                     note.appendChild(colorChangeBtn);
+                    note.appendChild(noteContent);
 
                     note.addEventListener('click', bringToFront);
                     note.addEventListener('input', saveNotesState);
