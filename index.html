@@ -49,6 +49,8 @@
             border-radius: 4px;
             margin-right: 5px;
             background-color: #eee;
+            white-space: nowrap;
+            overflow: hidden;
         }
         #tabs .tab.active {
             background-color: #007bff;
@@ -119,7 +121,7 @@
         }
         #toolbar {
             position: fixed;
-            top: 100px;
+            top: 70px;
             left: 10px;
             z-index: 2;
             background-color: #fff;
@@ -176,7 +178,7 @@
     </style>
 </head>
 <body>
-    <div id="banner">٩(◕‿◕｡)۶</div>
+    <div id="banner">Modern Whiteboard</div>
     <div id="tabs">
         <!-- Tabs will be dynamically generated here -->
         <button id="addBoardBtn">+</button>
@@ -213,233 +215,117 @@
                 selectedColor = option.dataset.color;
                 if (selectedNote) {
                     selectedNote.style.backgroundColor = selectedColor;
-                    saveBoardsState();
                 }
             });
         });
 
         function addBoard() {
-            const boardId = `board-${Date.now()}`;
+            const boardId = 'board-' + Date.now();
             const tab = document.createElement('div');
             tab.classList.add('tab');
-            tab.dataset.boardId = boardId;
-            tab.textContent = 'Untitled';
-            tab.addEventListener('click', () => switchBoard(boardId));
-
+            tab.textContent = 'Board ' + (tabsContainer.children.length + 1);
+            tab.addEventListener('click', () => switchBoard(boardId, tab));
             tabsContainer.insertBefore(tab, addBoardBtn);
-
-            switchBoard(boardId);
+            switchBoard(boardId, tab);
         }
 
-        function switchBoard(boardId) {
+        function switchBoard(boardId, tab) {
             currentBoardId = boardId;
-
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelector(`.tab[data-board-id="${boardId}"]`).classList.add('active');
-
-            document.querySelectorAll('.note').forEach(note => note.remove());
-            loadNotesForBoard(boardId);
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            loadBoardState();
         }
 
         function addStickyNote() {
             if (!currentBoardId) return;
-
             const note = document.createElement('div');
             note.classList.add('note');
-            note.style.top = `${(window.innerHeight / 2) - 75}px`;
-            note.style.left = `${(window.innerWidth / 2) - 75}px`;
+            note.id = 'note-' + noteId++;
             note.style.backgroundColor = selectedColor;
-            note.setAttribute('draggable', true);
-            note.setAttribute('id', `note-${noteId++}`);
-            note.dataset.boardId = currentBoardId;
-
-            const deleteBtn = document.createElement('button');
-            deleteBtn.classList.add('delete-btn');
-            deleteBtn.innerHTML = '&times;';
-            deleteBtn.addEventListener('click', () => deleteNote(note));
-
-            const starBtn = document.createElement('button');
-            starBtn.classList.add('star-btn');
-            starBtn.innerHTML = '⭐';
-            starBtn.addEventListener('click', () => {
-                starBtn.classList.toggle('rainbow');
-                saveBoardsState();
-            });
-
-            const noteContent = document.createElement('div');
-            noteContent.classList.add('note-content');
-            noteContent.contentEditable = true;
-            noteContent.addEventListener('input', () => {
-                noteContent.style.textAlign = 'center';
-                noteContent.style.fontWeight = 'bold';
-            });
-
-            note.appendChild(deleteBtn);
-            note.appendChild(starBtn);
-            note.appendChild(noteContent);
-
-            note.addEventListener('click', () => {
-                bringToFront(note);
-                selectedNote = note;
-                document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
-                const selectedOption = Array.from(document.querySelectorAll('.color-option')).find(opt => opt.dataset.color === note.style.backgroundColor);
-                if (selectedOption) {
-                    selectedOption.classList.add('selected');
-                }
-            });
-
-            note.addEventListener('input', saveBoardsState);
-            note.addEventListener('dragstart', dragStart);
-            note.addEventListener('dragend', dragEnd);
+            note.innerHTML = `
+                <button class="delete-btn">X</button>
+                <button class="star-btn rainbow">*</button>
+                <div class="note-content" contenteditable="true">New Note</div>
+            `;
+            note.querySelector('.delete-btn').addEventListener('click', () => note.remove());
+            note.querySelector('.star-btn').addEventListener('click', () => note.querySelector('.star-btn').classList.toggle('rainbow'));
+            note.querySelector('.note-content').addEventListener('focus', () => selectedNote = note);
+            note.addEventListener('mousedown', onMouseDown);
 
             document.body.appendChild(note);
-            bringToFront(note);
-            saveBoardsState();
+            positionNote(note);
         }
 
-        function bringToFront(note) {
-            document.querySelectorAll('.note').forEach(n => n.style.zIndex = 1);
-            note.style.zIndex = 10;
+        function positionNote(note) {
+            const x = Math.random() * (window.innerWidth - note.offsetWidth);
+            const y = Math.random() * (window.innerHeight - note.offsetHeight);
+            note.style.left = `${x}px`;
+            note.style.top = `${y}px`;
         }
 
-        function deleteNote(note) {
-            note.remove();
-            if (selectedNote === note) {
-                selectedNote = null;
-                document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+        function onMouseDown(event) {
+            const note = event.currentTarget;
+            const offsetX = event.clientX - note.offsetLeft;
+            const offsetY = event.clientY - note.offsetTop;
+
+            function onMouseMove(e) {
+                note.style.left = `${e.clientX - offsetX}px`;
+                note.style.top = `${e.clientY - offsetY}px`;
             }
-            saveBoardsState();
+
+            function onMouseUp() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                saveBoardState();
+            }
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
         }
 
         function clearCanvas() {
-            const confirmation = confirm("Are you sure you want to delete all sticky notes?");
-            if (confirmation) {
-                document.querySelectorAll('.note').forEach(note => note.remove());
-                saveBoardsState();
-            }
+            document.querySelectorAll('.note').forEach(note => note.remove());
+            saveBoardState();
         }
 
-        function dragStart(e) {
-            e.dataTransfer.setData('text/plain', e.target.id);
-            setTimeout(() => {
-                e.target.style.display = 'none';
-            }, 0);
+        function saveBoardState() {
+            if (!currentBoardId) return;
+            const notes = Array.from(document.querySelectorAll('.note')).map(note => ({
+                id: note.id,
+                left: note.style.left,
+                top: note.style.top,
+                backgroundColor: note.style.backgroundColor,
+                content: note.querySelector('.note-content').innerHTML
+            }));
+            localStorage.setItem(currentBoardId, JSON.stringify(notes));
         }
 
-        function dragEnd(e) {
-            e.target.style.display = 'block';
-            e.target.style.top = `${e.clientY - 75}px`;
-            e.target.style.left = `${e.clientX - 75}px`;
+        function loadBoardState() {
+            if (!currentBoardId) return;
+            const notes = JSON.parse(localStorage.getItem(currentBoardId) || '[]');
+            notes.forEach(note => {
+                const stickyNote = document.createElement('div');
+                stickyNote.classList.add('note');
+                stickyNote.id = note.id;
+                stickyNote.style.left = note.left;
+                stickyNote.style.top = note.top;
+                stickyNote.style.backgroundColor = note.backgroundColor;
+                stickyNote.innerHTML = `
+                    <button class="delete-btn">X</button>
+                    <button class="star-btn rainbow">*</button>
+                    <div class="note-content" contenteditable="true">${note.content}</div>
+                `;
+                stickyNote.querySelector('.delete-btn').addEventListener('click', () => stickyNote.remove());
+                stickyNote.querySelector('.star-btn').addEventListener('click', () => stickyNote.querySelector('.star-btn').classList.toggle('rainbow'));
+                stickyNote.querySelector('.note-content').addEventListener('focus', () => selectedNote = stickyNote);
+                stickyNote.addEventListener('mousedown', onMouseDown);
 
-            bringToFront(e.target);
-            saveBoardsState();
-        }
-
-        document.body.addEventListener('dragover', function(e) {
-            e.preventDefault();
-        });
-
-        document.body.addEventListener('drop', function(e) {
-            e.preventDefault();
-            const id = e.dataTransfer.getData('text');
-            const note = document.getElementById(id);
-            note.style.top = `${e.clientY - 75}px`;
-            note.style.left = `${e.clientX - 75}px`;
-
-            bringToFront(note);
-            saveBoardsState();
-        });
-
-        function saveBoardsState() {
-            const boards = {};
-            document.querySelectorAll('.note').forEach(note => {
-                const boardId = note.dataset.boardId;
-                if (!boards[boardId]) {
-                    boards[boardId] = [];
-                }
-                boards[boardId].push({
-                    id: note.id,
-                    top: note.style.top,
-                    left: note.style.left,
-                    backgroundColor: note.style.backgroundColor,
-                    content: note.querySelector('.note-content').innerHTML,
-                    isStarred: note.querySelector('.star-btn').classList.contains('rainbow')
-                });
-            });
-            localStorage.setItem('boards', JSON.stringify(boards));
-        }
-
-        function loadNotesForBoard(boardId) {
-            const boards = JSON.parse(localStorage.getItem('boards') || '{}');
-            const notes = boards[boardId] || [];
-            notes.forEach(noteData => {
-                const note = document.createElement('div');
-                note.classList.add('note');
-                note.style.top = noteData.top;
-                note.style.left = noteData.left;
-                note.style.backgroundColor = noteData.backgroundColor;
-                note.setAttribute('draggable', true);
-                note.setAttribute('id', noteData.id);
-                note.dataset.boardId = boardId;
-
-                const deleteBtn = document.createElement('button');
-                deleteBtn.classList.add('delete-btn');
-                deleteBtn.innerHTML = '&times;';
-                deleteBtn.addEventListener('click', () => deleteNote(note));
-
-                const starBtn = document.createElement('button');
-                starBtn.classList.add('star-btn');
-                starBtn.innerHTML = '⭐';
-                if (noteData.isStarred) {
-                    starBtn.classList.add('rainbow');
-                }
-                starBtn.addEventListener('click', () => {
-                    starBtn.classList.toggle('rainbow');
-                    saveBoardsState();
-                });
-
-                const noteContent = document.createElement('div');
-                noteContent.classList.add('note-content');
-                noteContent.contentEditable = true;
-                noteContent.innerHTML = noteData.content;
-                noteContent.addEventListener('input', () => {
-                    noteContent.style.textAlign = 'center';
-                    noteContent.style.fontWeight = 'bold';
-                });
-
-                note.appendChild(deleteBtn);
-                note.appendChild(starBtn);
-                note.appendChild(noteContent);
-
-                note.addEventListener('click', () => {
-                    bringToFront(note);
-                    selectedNote = note;
-                    document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
-                    const selectedOption = Array.from(document.querySelectorAll('.color-option')).find(opt => opt.dataset.color === note.style.backgroundColor);
-                    if (selectedOption) {
-                        selectedOption.classList.add('selected');
-                    }
-                });
-
-                note.addEventListener('input', saveBoardsState);
-                note.addEventListener('dragstart', dragStart);
-                note.addEventListener('dragend', dragEnd);
-
-                document.body.appendChild(note);
-                bringToFront(note);
+                document.body.appendChild(stickyNote);
             });
         }
 
-        function loadBoardsState() {
-            const boards = JSON.parse(localStorage.getItem('boards') || '{}');
-            const firstBoardId = Object.keys(boards)[0];
-            if (firstBoardId) {
-                switchBoard(firstBoardId);
-            }
-        }
-
-        // Load boards on page load
-        loadBoardsState();
+        // Initialize with a default board
+        addBoard();
     </script>
 </body>
 </html>
