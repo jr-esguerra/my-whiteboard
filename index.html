@@ -26,6 +26,46 @@
             z-index: 2;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
+        #tabs {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            width: 100%;
+            background-color: #fff;
+            border-bottom: 1px solid #ddd;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            overflow-x: auto;
+            white-space: nowrap;
+            z-index: 1;
+        }
+        #tabs .tab {
+            display: inline-block;
+            padding: 10px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 5px;
+            background-color: #eee;
+        }
+        #tabs .tab.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        #tabs #addBoardBtn {
+            display: inline-block;
+            padding: 10px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 18px;
+            margin-left: auto;
+        }
         .note {
             width: 150px;
             height: 150px;
@@ -79,7 +119,7 @@
         }
         #toolbar {
             position: fixed;
-            top: 60px;
+            top: 100px;
             left: 10px;
             z-index: 2;
             background-color: #fff;
@@ -137,6 +177,10 @@
 </head>
 <body>
     <div id="banner">٩(◕‿◕｡)۶</div>
+    <div id="tabs">
+        <!-- Tabs will be dynamically generated here -->
+        <button id="addBoardBtn">+</button>
+    </div>
     <div id="toolbar">
         <button id="addNoteBtn">Add Sticky Note</button>
         <button id="clearCanvasBtn">Clear Canvas</button>
@@ -151,12 +195,16 @@
         let noteId = 0;
         let selectedColor = '#ffd1dc'; // Default color
         let selectedNote = null;
+        let currentBoardId = null;
 
         const addNoteBtn = document.getElementById('addNoteBtn');
         const clearCanvasBtn = document.getElementById('clearCanvasBtn');
+        const tabsContainer = document.getElementById('tabs');
+        const addBoardBtn = document.getElementById('addBoardBtn');
 
         addNoteBtn.addEventListener('click', addStickyNote);
         clearCanvasBtn.addEventListener('click', clearCanvas);
+        addBoardBtn.addEventListener('click', addBoard);
 
         document.querySelectorAll('.color-option').forEach(option => {
             option.addEventListener('click', () => {
@@ -165,12 +213,37 @@
                 selectedColor = option.dataset.color;
                 if (selectedNote) {
                     selectedNote.style.backgroundColor = selectedColor;
-                    saveNotesState();
+                    saveBoardsState();
                 }
             });
         });
 
+        function addBoard() {
+            const boardId = `board-${Date.now()}`;
+            const tab = document.createElement('div');
+            tab.classList.add('tab');
+            tab.dataset.boardId = boardId;
+            tab.textContent = 'Untitled';
+            tab.addEventListener('click', () => switchBoard(boardId));
+
+            tabsContainer.insertBefore(tab, addBoardBtn);
+
+            switchBoard(boardId);
+        }
+
+        function switchBoard(boardId) {
+            currentBoardId = boardId;
+
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelector(`.tab[data-board-id="${boardId}"]`).classList.add('active');
+
+            document.querySelectorAll('.note').forEach(note => note.remove());
+            loadNotesForBoard(boardId);
+        }
+
         function addStickyNote() {
+            if (!currentBoardId) return;
+
             const note = document.createElement('div');
             note.classList.add('note');
             note.style.top = `${(window.innerHeight / 2) - 75}px`;
@@ -178,6 +251,7 @@
             note.style.backgroundColor = selectedColor;
             note.setAttribute('draggable', true);
             note.setAttribute('id', `note-${noteId++}`);
+            note.dataset.boardId = currentBoardId;
 
             const deleteBtn = document.createElement('button');
             deleteBtn.classList.add('delete-btn');
@@ -189,7 +263,7 @@
             starBtn.innerHTML = '⭐';
             starBtn.addEventListener('click', () => {
                 starBtn.classList.toggle('rainbow');
-                saveNotesState();
+                saveBoardsState();
             });
 
             const noteContent = document.createElement('div');
@@ -214,13 +288,13 @@
                 }
             });
 
-            note.addEventListener('input', saveNotesState);
+            note.addEventListener('input', saveBoardsState);
             note.addEventListener('dragstart', dragStart);
             note.addEventListener('dragend', dragEnd);
 
             document.body.appendChild(note);
             bringToFront(note);
-            saveNotesState();
+            saveBoardsState();
         }
 
         function bringToFront(note) {
@@ -234,14 +308,14 @@
                 selectedNote = null;
                 document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
             }
-            saveNotesState();
+            saveBoardsState();
         }
 
         function clearCanvas() {
             const confirmation = confirm("Are you sure you want to delete all sticky notes?");
             if (confirmation) {
                 document.querySelectorAll('.note').forEach(note => note.remove());
-                saveNotesState();
+                saveBoardsState();
             }
         }
 
@@ -258,7 +332,7 @@
             e.target.style.left = `${e.clientX - 75}px`;
 
             bringToFront(e.target);
-            saveNotesState();
+            saveBoardsState();
         }
 
         document.body.addEventListener('dragover', function(e) {
@@ -273,23 +347,31 @@
             note.style.left = `${e.clientX - 75}px`;
 
             bringToFront(note);
-            saveNotesState();
+            saveBoardsState();
         });
 
-        function saveNotesState() {
-            const notes = Array.from(document.querySelectorAll('.note')).map(note => ({
-                id: note.id,
-                top: note.style.top,
-                left: note.style.left,
-                backgroundColor: note.style.backgroundColor,
-                content: note.querySelector('.note-content').innerHTML,
-                isStarred: note.querySelector('.star-btn').classList.contains('rainbow')
-            }));
-            localStorage.setItem('notes', JSON.stringify(notes));
+        function saveBoardsState() {
+            const boards = {};
+            document.querySelectorAll('.note').forEach(note => {
+                const boardId = note.dataset.boardId;
+                if (!boards[boardId]) {
+                    boards[boardId] = [];
+                }
+                boards[boardId].push({
+                    id: note.id,
+                    top: note.style.top,
+                    left: note.style.left,
+                    backgroundColor: note.style.backgroundColor,
+                    content: note.querySelector('.note-content').innerHTML,
+                    isStarred: note.querySelector('.star-btn').classList.contains('rainbow')
+                });
+            });
+            localStorage.setItem('boards', JSON.stringify(boards));
         }
 
-        function loadNotesState() {
-            const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+        function loadNotesForBoard(boardId) {
+            const boards = JSON.parse(localStorage.getItem('boards') || '{}');
+            const notes = boards[boardId] || [];
             notes.forEach(noteData => {
                 const note = document.createElement('div');
                 note.classList.add('note');
@@ -298,6 +380,7 @@
                 note.style.backgroundColor = noteData.backgroundColor;
                 note.setAttribute('draggable', true);
                 note.setAttribute('id', noteData.id);
+                note.dataset.boardId = boardId;
 
                 const deleteBtn = document.createElement('button');
                 deleteBtn.classList.add('delete-btn');
@@ -312,7 +395,7 @@
                 }
                 starBtn.addEventListener('click', () => {
                     starBtn.classList.toggle('rainbow');
-                    saveNotesState();
+                    saveBoardsState();
                 });
 
                 const noteContent = document.createElement('div');
@@ -338,7 +421,7 @@
                     }
                 });
 
-                note.addEventListener('input', saveNotesState);
+                note.addEventListener('input', saveBoardsState);
                 note.addEventListener('dragstart', dragStart);
                 note.addEventListener('dragend', dragEnd);
 
@@ -347,8 +430,16 @@
             });
         }
 
-        // Load sticky notes on page load
-        loadNotesState();
+        function loadBoardsState() {
+            const boards = JSON.parse(localStorage.getItem('boards') || '{}');
+            const firstBoardId = Object.keys(boards)[0];
+            if (firstBoardId) {
+                switchBoard(firstBoardId);
+            }
+        }
+
+        // Load boards on page load
+        loadBoardsState();
     </script>
 </body>
 </html>
