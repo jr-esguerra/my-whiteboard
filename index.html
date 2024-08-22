@@ -31,54 +31,53 @@
             top: 60px;
             left: 0;
             width: 100%;
-            background-color: #e0e0e0;
+            background-color: #eee;
             display: flex;
-            padding: 5px;
             overflow-x: auto;
+            white-space: nowrap;
             z-index: 1;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid #ddd;
         }
         #tabs .tab {
-            padding: 10px;
-            margin-right: 5px;
-            background-color: #ccc;
-            border-radius: 4px;
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 0;
             cursor: pointer;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            background: #fff;
             white-space: nowrap;
         }
         #tabs .tab.active {
             background-color: #007bff;
             color: white;
+            font-weight: bold;
         }
-        #tabs .tab .tab-title {
-            display: inline;
-        }
-        #tabs .tab .edit-title {
-            display: none;
+        #tabs .tab input {
             border: none;
             background: none;
-            color: white;
-            font-size: 14px;
+            color: inherit;
+            font: inherit;
+            width: 100%;
             text-align: center;
-            outline: none;
-        }
-        #tabs .tab.editing .edit-title {
-            display: inline;
+            cursor: pointer;
         }
         #tabs #addBoardBtn {
+            display: inline-block;
+            padding: 10px;
             background-color: #007bff;
             color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 5px 10px;
             cursor: pointer;
-            margin-left: 5px;
+            border: 1px solid #ddd;
+            border-radius: 0 5px 5px 0;
+            white-space: nowrap;
         }
         #toolbar {
             position: fixed;
-            top: 100px; /* Adjusted to be below the tabs */
+            top: 80px; /* Adjusted to ensure toolbar is below the tabs */
             left: 10px;
-            z-index: 1;
+            z-index: 0; /* Ensure toolbar is behind the tabs */
             background-color: #fff;
             border: 1px solid #ddd;
             border-radius: 8px;
@@ -186,8 +185,10 @@
 <body>
     <div id="banner">٩(◕‿◕｡)۶</div>
     <div id="tabs">
-        <div id="tabs-container"></div>
-        <button id="addBoardBtn">+</button>
+        <div class="tab active" data-index="0">
+            <input type="text" value="Untitled Board 1">
+        </div>
+        <div id="addBoardBtn">+</div>
     </div>
     <div id="toolbar">
         <button id="addNoteBtn">Add Sticky Note</button>
@@ -203,11 +204,11 @@
         let noteId = 0;
         let selectedColor = '#ffd1dc'; // Default color
         let selectedNote = null;
-        let currentBoard = 'board-0'; // Default board
+        let currentTabIndex = 0;
+        const tabsContainer = document.getElementById('tabs');
 
         const addNoteBtn = document.getElementById('addNoteBtn');
         const clearCanvasBtn = document.getElementById('clearCanvasBtn');
-        const tabsContainer = document.getElementById('tabs-container');
         const addBoardBtn = document.getElementById('addBoardBtn');
 
         addNoteBtn.addEventListener('click', addStickyNote);
@@ -234,7 +235,6 @@
             note.style.backgroundColor = selectedColor;
             note.setAttribute('draggable', true);
             note.setAttribute('id', `note-${noteId++}`);
-            note.dataset.board = currentBoard;
 
             const deleteBtn = document.createElement('button');
             deleteBtn.classList.add('delete-btn');
@@ -275,7 +275,7 @@
             note.addEventListener('dragstart', dragStart);
             note.addEventListener('dragend', dragEnd);
 
-            document.body.appendChild(note);
+            document.querySelectorAll('.tab')[currentTabIndex].appendChild(note);
             bringToFront(note);
             saveNotesState();
         }
@@ -297,53 +297,9 @@
         function clearCanvas() {
             const confirmation = confirm("Are you sure you want to delete all sticky notes?");
             if (confirmation) {
-                document.querySelectorAll(`.note[data-board="${currentBoard}"]`).forEach(note => note.remove());
+                document.querySelectorAll('.note').forEach(note => note.remove());
                 saveNotesState();
             }
-        }
-
-        function addBoard() {
-            const boardId = `board-${document.querySelectorAll('#tabs .tab').length}`;
-            const tab = document.createElement('div');
-            tab.classList.add('tab');
-            tab.dataset.board = boardId;
-            tab.innerHTML = `
-                <span class="tab-title">Untitled</span>
-                <input type="text" class="edit-title" placeholder="Untitled">
-            `;
-            tab.addEventListener('click', () => selectBoard(boardId));
-            tabsContainer.appendChild(tab);
-
-            const editTitle = tab.querySelector('.edit-title');
-            editTitle.addEventListener('blur', () => {
-                const newTitle = editTitle.value || 'Untitled';
-                tab.querySelector('.tab-title').textContent = newTitle;
-                saveNotesState();
-            });
-            editTitle.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    editTitle.blur();
-                }
-            });
-
-            selectBoard(boardId);
-        }
-
-        function selectBoard(boardId) {
-            currentBoard = boardId;
-            document.querySelectorAll('#tabs .tab').forEach(tab => {
-                tab.classList.toggle('active', tab.dataset.board === boardId);
-                const editTitle = tab.querySelector('.edit-title');
-                if (tab.dataset.board === boardId) {
-                    editTitle.style.display = 'inline';
-                    editTitle.focus();
-                } else {
-                    editTitle.style.display = 'none';
-                }
-            });
-            document.querySelectorAll('.note').forEach(note => {
-                note.style.display = (note.dataset.board === boardId) ? 'block' : 'none';
-            });
         }
 
         function dragStart(e) {
@@ -378,30 +334,44 @@
         });
 
         function saveNotesState() {
-            const boards = {};
-            document.querySelectorAll('.note').forEach(note => {
-                if (!boards[note.dataset.board]) {
-                    boards[note.dataset.board] = [];
-                }
-                boards[note.dataset.board].push({
-                    id: note.id,
-                    top: note.style.top,
-                    left: note.style.left,
-                    backgroundColor: note.style.backgroundColor,
-                    content: note.querySelector('.note-content').innerHTML,
-                    isStarred: note.querySelector('.star-btn').classList.contains('rainbow')
-                });
+            const boards = Array.from(document.querySelectorAll('.tab')).map(tab => {
+                return {
+                    title: tab.querySelector('input').value || 'Untitled',
+                    notes: Array.from(tab.querySelectorAll('.note')).map(note => ({
+                        id: note.id,
+                        top: note.style.top,
+                        left: note.style.left,
+                        backgroundColor: note.style.backgroundColor,
+                        content: note.querySelector('.note-content').innerHTML,
+                        isStarred: note.querySelector('.star-btn').classList.contains('rainbow')
+                    }))
+                };
             });
             localStorage.setItem('boards', JSON.stringify(boards));
         }
 
         function loadNotesState() {
-            const boards = JSON.parse(localStorage.getItem('boards') || '{}');
-            for (const [boardId, notes] of Object.entries(boards)) {
-                if (boardId !== 'board-0') {
-                    addBoard();
+            const boards = JSON.parse(localStorage.getItem('boards') || '[]');
+            boards.forEach((boardData, index) => {
+                const tab = document.createElement('div');
+                tab.classList.add('tab');
+                tab.setAttribute('data-index', index);
+                
+                const titleInput = document.createElement('input');
+                titleInput.type = 'text';
+                titleInput.value = boardData.title;
+                titleInput.addEventListener('input', saveNotesState);
+                tab.appendChild(titleInput);
+
+                if (index === 0) {
+                    tab.classList.add('active');
                 }
-                notes.forEach(noteData => {
+
+                tab.addEventListener('click', () => switchTab(index));
+
+                tabsContainer.insertBefore(tab, addBoardBtn);
+
+                boardData.notes.forEach(noteData => {
                     const note = document.createElement('div');
                     note.classList.add('note');
                     note.style.top = noteData.top;
@@ -409,7 +379,6 @@
                     note.style.backgroundColor = noteData.backgroundColor;
                     note.setAttribute('draggable', true);
                     note.setAttribute('id', noteData.id);
-                    note.dataset.board = boardId;
 
                     const deleteBtn = document.createElement('button');
                     deleteBtn.classList.add('delete-btn');
@@ -454,13 +423,42 @@
                     note.addEventListener('dragstart', dragStart);
                     note.addEventListener('dragend', dragEnd);
 
-                    document.body.appendChild(note);
-                    bringToFront(note);
+                    tab.appendChild(note);
                 });
-            }
+            });
         }
 
-        // Load sticky notes on page load
+        function addBoard() {
+            const index = document.querySelectorAll('.tab').length - 1;
+            const tab = document.createElement('div');
+            tab.classList.add('tab');
+            tab.setAttribute('data-index', index);
+
+            const titleInput = document.createElement('input');
+            titleInput.type = 'text';
+            titleInput.value = 'Untitled';
+            titleInput.addEventListener('input', saveNotesState);
+            tab.appendChild(titleInput);
+
+            tab.addEventListener('click', () => switchTab(index));
+
+            tabsContainer.insertBefore(tab, addBoardBtn);
+
+            switchTab(index);
+        }
+
+        function switchTab(index) {
+            document.querySelectorAll('.tab').forEach((tab, i) => {
+                tab.classList.toggle('active', i === index);
+                if (i === index) {
+                    currentTabIndex = index;
+                    document.querySelectorAll('.note').forEach(note => note.remove());
+                    loadNotesState();
+                }
+            });
+        }
+
+        // Load sticky notes and tabs on page load
         loadNotesState();
     </script>
 </body>
