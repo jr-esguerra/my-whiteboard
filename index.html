@@ -31,40 +31,104 @@
             top: 60px;
             left: 0;
             width: 100%;
-            background-color: #fff;
-            border-bottom: 1px solid #ddd;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            padding: 10px;
+            background-color: #e0e0e0;
             display: flex;
-            align-items: center;
+            padding: 5px;
             overflow-x: auto;
-            white-space: nowrap;
             z-index: 1;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         #tabs .tab {
-            display: inline-block;
             padding: 10px;
-            cursor: pointer;
-            border: 1px solid #ddd;
-            border-radius: 4px;
             margin-right: 5px;
-            background-color: #eee;
+            background-color: #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
         }
         #tabs .tab.active {
             background-color: #007bff;
             color: white;
-            border-color: #007bff;
+        }
+        #tabs .tab .tab-title {
+            display: inline;
+        }
+        #tabs .tab .edit-title {
+            display: none;
+            border: none;
+            background: none;
+            color: white;
+            font-size: 14px;
+            text-align: center;
+            outline: none;
+        }
+        #tabs .tab.editing .edit-title {
+            display: inline;
         }
         #tabs #addBoardBtn {
-            display: inline-block;
-            padding: 10px;
-            cursor: pointer;
             background-color: #007bff;
             color: white;
             border: none;
             border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+        #toolbar {
+            position: fixed;
+            top: 100px; /* Adjusted to be below the tabs */
+            left: 10px;
+            z-index: 1;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        #addNoteBtn, #clearCanvasBtn {
+            cursor: pointer;
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .color-option {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            position: relative;
+        }
+        .color-option.selected {
+            border-color: #007bff;
+        }
+        .color-option.selected::after {
+            content: '\2713'; /* Check-mark Unicode character */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #007bff;
             font-size: 18px;
-            margin-left: auto;
+        }
+        .star-btn.rainbow {
+            animation: rainbow 2s infinite;
+        }
+        @keyframes rainbow {
+            0% { color: red; }
+            14% { color: orange; }
+            28% { color: yellow; }
+            42% { color: green; }
+            57% { color: blue; }
+            71% { color: indigo; }
+            85% { color: violet; }
+            100% { color: red; }
         }
         .note {
             width: 150px;
@@ -117,68 +181,12 @@
             align-items: center;
             justify-content: center;
         }
-        #toolbar {
-            position: fixed;
-            top: 100px;
-            left: 10px;
-            z-index: 2;
-            background-color: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 10px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        #addNoteBtn, #clearCanvasBtn {
-            cursor: pointer;
-            padding: 5px 10px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-        .color-option {
-            width: 25px;
-            height: 25px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid transparent;
-            position: relative;
-        }
-        .color-option.selected {
-            border-color: #007bff;
-        }
-        .color-option.selected::after {
-            content: '\2713'; /* Check-mark Unicode character */
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #007bff;
-            font-size: 18px;
-        }
-        .star-btn.rainbow {
-            animation: rainbow 2s infinite;
-        }
-        @keyframes rainbow {
-            0% { color: red; }
-            14% { color: orange; }
-            28% { color: yellow; }
-            42% { color: green; }
-            57% { color: blue; }
-            71% { color: indigo; }
-            85% { color: violet; }
-            100% { color: red; }
-        }
     </style>
 </head>
 <body>
     <div id="banner">٩(◕‿◕｡)۶</div>
     <div id="tabs">
-        <!-- Tabs will be dynamically generated here -->
+        <div id="tabs-container"></div>
         <button id="addBoardBtn">+</button>
     </div>
     <div id="toolbar">
@@ -195,11 +203,11 @@
         let noteId = 0;
         let selectedColor = '#ffd1dc'; // Default color
         let selectedNote = null;
-        let currentBoardId = null;
+        let currentBoard = 'board-0'; // Default board
 
         const addNoteBtn = document.getElementById('addNoteBtn');
         const clearCanvasBtn = document.getElementById('clearCanvasBtn');
-        const tabsContainer = document.getElementById('tabs');
+        const tabsContainer = document.getElementById('tabs-container');
         const addBoardBtn = document.getElementById('addBoardBtn');
 
         addNoteBtn.addEventListener('click', addStickyNote);
@@ -213,37 +221,12 @@
                 selectedColor = option.dataset.color;
                 if (selectedNote) {
                     selectedNote.style.backgroundColor = selectedColor;
-                    saveBoardsState();
+                    saveNotesState();
                 }
             });
         });
 
-        function addBoard() {
-            const boardId = `board-${Date.now()}`;
-            const tab = document.createElement('div');
-            tab.classList.add('tab');
-            tab.dataset.boardId = boardId;
-            tab.textContent = 'Untitled';
-            tab.addEventListener('click', () => switchBoard(boardId));
-
-            tabsContainer.insertBefore(tab, addBoardBtn);
-
-            switchBoard(boardId);
-        }
-
-        function switchBoard(boardId) {
-            currentBoardId = boardId;
-
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelector(`.tab[data-board-id="${boardId}"]`).classList.add('active');
-
-            document.querySelectorAll('.note').forEach(note => note.remove());
-            loadNotesForBoard(boardId);
-        }
-
         function addStickyNote() {
-            if (!currentBoardId) return;
-
             const note = document.createElement('div');
             note.classList.add('note');
             note.style.top = `${(window.innerHeight / 2) - 75}px`;
@@ -251,7 +234,7 @@
             note.style.backgroundColor = selectedColor;
             note.setAttribute('draggable', true);
             note.setAttribute('id', `note-${noteId++}`);
-            note.dataset.boardId = currentBoardId;
+            note.dataset.board = currentBoard;
 
             const deleteBtn = document.createElement('button');
             deleteBtn.classList.add('delete-btn');
@@ -263,7 +246,7 @@
             starBtn.innerHTML = '⭐';
             starBtn.addEventListener('click', () => {
                 starBtn.classList.toggle('rainbow');
-                saveBoardsState();
+                saveNotesState();
             });
 
             const noteContent = document.createElement('div');
@@ -288,13 +271,13 @@
                 }
             });
 
-            note.addEventListener('input', saveBoardsState);
+            note.addEventListener('input', saveNotesState);
             note.addEventListener('dragstart', dragStart);
             note.addEventListener('dragend', dragEnd);
 
             document.body.appendChild(note);
             bringToFront(note);
-            saveBoardsState();
+            saveNotesState();
         }
 
         function bringToFront(note) {
@@ -308,15 +291,59 @@
                 selectedNote = null;
                 document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
             }
-            saveBoardsState();
+            saveNotesState();
         }
 
         function clearCanvas() {
             const confirmation = confirm("Are you sure you want to delete all sticky notes?");
             if (confirmation) {
-                document.querySelectorAll('.note').forEach(note => note.remove());
-                saveBoardsState();
+                document.querySelectorAll(`.note[data-board="${currentBoard}"]`).forEach(note => note.remove());
+                saveNotesState();
             }
+        }
+
+        function addBoard() {
+            const boardId = `board-${document.querySelectorAll('#tabs .tab').length}`;
+            const tab = document.createElement('div');
+            tab.classList.add('tab');
+            tab.dataset.board = boardId;
+            tab.innerHTML = `
+                <span class="tab-title">Untitled</span>
+                <input type="text" class="edit-title" placeholder="Untitled">
+            `;
+            tab.addEventListener('click', () => selectBoard(boardId));
+            tabsContainer.appendChild(tab);
+
+            const editTitle = tab.querySelector('.edit-title');
+            editTitle.addEventListener('blur', () => {
+                const newTitle = editTitle.value || 'Untitled';
+                tab.querySelector('.tab-title').textContent = newTitle;
+                saveNotesState();
+            });
+            editTitle.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    editTitle.blur();
+                }
+            });
+
+            selectBoard(boardId);
+        }
+
+        function selectBoard(boardId) {
+            currentBoard = boardId;
+            document.querySelectorAll('#tabs .tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.board === boardId);
+                const editTitle = tab.querySelector('.edit-title');
+                if (tab.dataset.board === boardId) {
+                    editTitle.style.display = 'inline';
+                    editTitle.focus();
+                } else {
+                    editTitle.style.display = 'none';
+                }
+            });
+            document.querySelectorAll('.note').forEach(note => {
+                note.style.display = (note.dataset.board === boardId) ? 'block' : 'none';
+            });
         }
 
         function dragStart(e) {
@@ -332,7 +359,7 @@
             e.target.style.left = `${e.clientX - 75}px`;
 
             bringToFront(e.target);
-            saveBoardsState();
+            saveNotesState();
         }
 
         document.body.addEventListener('dragover', function(e) {
@@ -347,17 +374,16 @@
             note.style.left = `${e.clientX - 75}px`;
 
             bringToFront(note);
-            saveBoardsState();
+            saveNotesState();
         });
 
-        function saveBoardsState() {
+        function saveNotesState() {
             const boards = {};
             document.querySelectorAll('.note').forEach(note => {
-                const boardId = note.dataset.boardId;
-                if (!boards[boardId]) {
-                    boards[boardId] = [];
+                if (!boards[note.dataset.board]) {
+                    boards[note.dataset.board] = [];
                 }
-                boards[boardId].push({
+                boards[note.dataset.board].push({
                     id: note.id,
                     top: note.style.top,
                     left: note.style.left,
@@ -369,77 +395,73 @@
             localStorage.setItem('boards', JSON.stringify(boards));
         }
 
-        function loadNotesForBoard(boardId) {
+        function loadNotesState() {
             const boards = JSON.parse(localStorage.getItem('boards') || '{}');
-            const notes = boards[boardId] || [];
-            notes.forEach(noteData => {
-                const note = document.createElement('div');
-                note.classList.add('note');
-                note.style.top = noteData.top;
-                note.style.left = noteData.left;
-                note.style.backgroundColor = noteData.backgroundColor;
-                note.setAttribute('draggable', true);
-                note.setAttribute('id', noteData.id);
-                note.dataset.boardId = boardId;
-
-                const deleteBtn = document.createElement('button');
-                deleteBtn.classList.add('delete-btn');
-                deleteBtn.innerHTML = '&times;';
-                deleteBtn.addEventListener('click', () => deleteNote(note));
-
-                const starBtn = document.createElement('button');
-                starBtn.classList.add('star-btn');
-                starBtn.innerHTML = '⭐';
-                if (noteData.isStarred) {
-                    starBtn.classList.add('rainbow');
+            for (const [boardId, notes] of Object.entries(boards)) {
+                if (boardId !== 'board-0') {
+                    addBoard();
                 }
-                starBtn.addEventListener('click', () => {
-                    starBtn.classList.toggle('rainbow');
-                    saveBoardsState();
-                });
+                notes.forEach(noteData => {
+                    const note = document.createElement('div');
+                    note.classList.add('note');
+                    note.style.top = noteData.top;
+                    note.style.left = noteData.left;
+                    note.style.backgroundColor = noteData.backgroundColor;
+                    note.setAttribute('draggable', true);
+                    note.setAttribute('id', noteData.id);
+                    note.dataset.board = boardId;
 
-                const noteContent = document.createElement('div');
-                noteContent.classList.add('note-content');
-                noteContent.contentEditable = true;
-                noteContent.innerHTML = noteData.content;
-                noteContent.addEventListener('input', () => {
-                    noteContent.style.textAlign = 'center';
-                    noteContent.style.fontWeight = 'bold';
-                });
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.classList.add('delete-btn');
+                    deleteBtn.innerHTML = '&times;';
+                    deleteBtn.addEventListener('click', () => deleteNote(note));
 
-                note.appendChild(deleteBtn);
-                note.appendChild(starBtn);
-                note.appendChild(noteContent);
-
-                note.addEventListener('click', () => {
-                    bringToFront(note);
-                    selectedNote = note;
-                    document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
-                    const selectedOption = Array.from(document.querySelectorAll('.color-option')).find(opt => opt.dataset.color === note.style.backgroundColor);
-                    if (selectedOption) {
-                        selectedOption.classList.add('selected');
+                    const starBtn = document.createElement('button');
+                    starBtn.classList.add('star-btn');
+                    starBtn.innerHTML = '⭐';
+                    if (noteData.isStarred) {
+                        starBtn.classList.add('rainbow');
                     }
+                    starBtn.addEventListener('click', () => {
+                        starBtn.classList.toggle('rainbow');
+                        saveNotesState();
+                    });
+
+                    const noteContent = document.createElement('div');
+                    noteContent.classList.add('note-content');
+                    noteContent.contentEditable = true;
+                    noteContent.innerHTML = noteData.content;
+                    noteContent.addEventListener('input', () => {
+                        noteContent.style.textAlign = 'center';
+                        noteContent.style.fontWeight = 'bold';
+                    });
+
+                    note.appendChild(deleteBtn);
+                    note.appendChild(starBtn);
+                    note.appendChild(noteContent);
+
+                    note.addEventListener('click', () => {
+                        bringToFront(note);
+                        selectedNote = note;
+                        document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+                        const selectedOption = Array.from(document.querySelectorAll('.color-option')).find(opt => opt.dataset.color === note.style.backgroundColor);
+                        if (selectedOption) {
+                            selectedOption.classList.add('selected');
+                        }
+                    });
+
+                    note.addEventListener('input', saveNotesState);
+                    note.addEventListener('dragstart', dragStart);
+                    note.addEventListener('dragend', dragEnd);
+
+                    document.body.appendChild(note);
+                    bringToFront(note);
                 });
-
-                note.addEventListener('input', saveBoardsState);
-                note.addEventListener('dragstart', dragStart);
-                note.addEventListener('dragend', dragEnd);
-
-                document.body.appendChild(note);
-                bringToFront(note);
-            });
-        }
-
-        function loadBoardsState() {
-            const boards = JSON.parse(localStorage.getItem('boards') || '{}');
-            const firstBoardId = Object.keys(boards)[0];
-            if (firstBoardId) {
-                switchBoard(firstBoardId);
             }
         }
 
-        // Load boards on page load
-        loadBoardsState();
+        // Load sticky notes on page load
+        loadNotesState();
     </script>
 </body>
 </html>
