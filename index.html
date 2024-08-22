@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modern Whiteboard with Sticky Notes</title>
     <style>
-        body,
-        html {
+        body, html {
             margin: 0;
             padding: 0;
             height: 100%;
@@ -15,7 +13,6 @@
             font-family: 'Helvetica', sans-serif;
             background-color: #f4f4f4;
         }
-
         #banner {
             position: fixed;
             top: 0;
@@ -29,7 +26,6 @@
             z-index: 2;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-
         .note {
             width: 150px;
             height: 150px;
@@ -44,15 +40,8 @@
             font-family: 'Helvetica', sans-serif;
             font-size: 14px;
         }
-
         .note .delete-btn {
             position: absolute;
-            font-size: 14px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: white;
-            z-index: 2;
             top: 5px;
             right: 5px;
             background-color: red;
@@ -62,12 +51,16 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 14px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: white;
+            z-index: 2;
         }
-
         .note-content {
             width: 100%;
-            height: calc(100% - 20px); /* Adjusted to fill the entire note */
-            overflow: auto;
+            height: calc(100% - 10px); /* Adjusted to fill the sticky note */
             box-sizing: border-box;
             text-align: center;
             font-weight: bold;
@@ -75,11 +68,10 @@
             align-items: center;
             justify-content: center;
         }
-
         #toolbar {
             position: fixed;
-            top: 0;
-            left: 0;
+            top: 60px;
+            left: 10px;
             z-index: 2;
             background-color: #fff;
             border: 1px solid #ddd;
@@ -90,9 +82,7 @@
             gap: 10px;
             align-items: center;
         }
-
-        #addNoteBtn,
-        #clearCanvasBtn {
+        #addNoteBtn, #clearCanvasBtn {
             cursor: pointer;
             padding: 5px 10px;
             background-color: #007bff;
@@ -101,7 +91,6 @@
             border-radius: 5px;
             font-size: 14px;
         }
-
         .color-option {
             width: 25px;
             height: 25px;
@@ -110,13 +99,11 @@
             border: 2px solid transparent;
             position: relative;
         }
-
         .color-option.selected {
             border-color: #007bff;
         }
-
         .color-option.selected::after {
-            content: '\2713';
+            content: '\2713'; /* Check-mark Unicode character */
             position: absolute;
             top: 50%;
             left: 50%;
@@ -124,14 +111,8 @@
             color: #007bff;
             font-size: 18px;
         }
-
-        .sticker {
-            font-size: 24px;
-            cursor: pointer;
-        }
     </style>
 </head>
-
 <body>
     <div id="banner">٩(◕‿◕｡)۶</div>
     <div id="toolbar">
@@ -142,9 +123,6 @@
         <div class="color-option" style="background-color: #bbdefb;" data-color="#bbdefb"></div>
         <div class="color-option" style="background-color: #c8e6c9;" data-color="#c8e6c9"></div>
         <div class="color-option" style="background-color: #ffe0b2;" data-color="#ffe0b2"></div>
-        <div id="sticker1" class="sticker" draggable="true">✅</div>
-        <div id="sticker2" class="sticker" draggable="true">❌</div>
-        <div id="sticker3" class="sticker" draggable="true">😊</div>
     </div>
 
     <script>
@@ -214,9 +192,9 @@
             saveNotesState();
         }
 
-        function bringToFront(element) {
-            document.querySelectorAll('.note, .sticker').forEach(el => el.style.zIndex = 1);
-            element.style.zIndex = 10;
+        function bringToFront(note) {
+            document.querySelectorAll('.note').forEach(n => n.style.zIndex = 1);
+            note.style.zIndex = 10;
         }
 
         function deleteNote(note) {
@@ -231,7 +209,7 @@
         function clearCanvas() {
             const confirmation = confirm("Are you sure you want to delete all sticky notes?");
             if (confirmation) {
-                document.querySelectorAll('.note, .sticker').forEach(el => el.remove());
+                document.querySelectorAll('.note').forEach(note => note.remove());
                 saveNotesState();
             }
         }
@@ -245,111 +223,87 @@
 
         function dragEnd(e) {
             e.target.style.display = 'block';
-            e.target.style.top = `${e.clientY - 12}px`; // Adjusting for the height of the stickers
-            e.target.style.left = `${e.clientX - 12}px`; // Adjusting for the width of the stickers
+            e.target.style.top = `${e.clientY - 75}px`;
+            e.target.style.left = `${e.clientX - 75}px`;
+
             bringToFront(e.target);
             saveNotesState();
         }
 
-        document.body.addEventListener('dragover', function (e) {
+        document.body.addEventListener('dragover', function(e) {
             e.preventDefault();
         });
 
-        document.body.addEventListener('drop', function (e) {
+        document.body.addEventListener('drop', function(e) {
             e.preventDefault();
             const id = e.dataTransfer.getData('text');
-            const element = document.getElementById(id);
-            element.style.top = `${e.clientY - 12}px`; // Adjusting for the height of the stickers
-            element.style.left = `${e.clientX - 12}px`; // Adjusting for the width of the stickers
-            element.style.display = 'block';
-            bringToFront(element);
-            saveNotesState();
-        });
+            const note = document.getElementById(id);
+            note.style.top = `${e.clientY - 75}px`;
+            note.style.left = `${e.clientX - 75}px`;
 
-        // Adding stickers drag functionality
-        document.querySelectorAll('.sticker').forEach(sticker => {
-            sticker.setAttribute('id', `sticker-${noteId++}`);
-            sticker.setAttribute('draggable', true);
-            sticker.addEventListener('dragstart', dragStart);
-            sticker.addEventListener('dragend', dragEnd);
+            bringToFront(note);
+            saveNotesState();
         });
 
         function saveNotesState() {
             const notes = Array.from(document.querySelectorAll('.note')).map(note => ({
                 id: note.id,
-                content: note.querySelector('.note-content').innerHTML,
-                color: note.style.backgroundColor,
-                position: {
-                    top: note.style.top,
-                    left: note.style.left
-                }
+                top: note.style.top,
+                left: note.style.left,
+                backgroundColor: note.style.backgroundColor,
+                content: note.querySelector('.note-content').innerHTML
             }));
-
-            const stickers = Array.from(document.querySelectorAll('.sticker')).map(sticker => ({
-                id: sticker.id,
-                content: sticker.innerHTML,
-                position: {
-                    top: sticker.style.top,
-                    left: sticker.style.left
-                }
-            }));
-
-            const state = { notes, stickers };
-            localStorage.setItem('notesState', JSON.stringify(state));
+            localStorage.setItem('notes', JSON.stringify(notes));
         }
 
         function loadNotesState() {
-            const state = JSON.parse(localStorage.getItem('notesState'));
-            if (state) {
-                state.notes.forEach(noteData => {
-                    const note = document.createElement('div');
-                    note.classList.add('note');
-                    note.style.top = noteData.position.top;
-                    note.style.left = noteData.position.left;
-                    note.style.backgroundColor = noteData.color;
-                    note.setAttribute('draggable', true);
-                    note.setAttribute('id', noteData.id);
+            const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+            notes.forEach(({ id, top, left, backgroundColor, content }) => {
+                const note = document.createElement('div');
+                note.classList.add('note');
+                note.style.top = top;
+                note.style.left = left;
+                note.style.backgroundColor = backgroundColor;
+                note.setAttribute('draggable', true);
+                note.setAttribute('id', id);
 
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.classList.add('delete-btn');
-                    deleteBtn.innerHTML = '&times;';
-                    deleteBtn.addEventListener('click', () => deleteNote(note));
+                const deleteBtn = document.createElement('button');
+                deleteBtn.classList.add('delete-btn');
+                deleteBtn.innerHTML = '&times;';
+                deleteBtn.addEventListener('click', () => deleteNote(note));
 
-                    const noteContent = document.createElement('div');
-                    noteContent.classList.add('note-content');
-                    noteContent.contentEditable = true;
-                    noteContent.innerHTML = noteData.content;
-
-                    note.appendChild(deleteBtn);
-                    note.appendChild(noteContent);
-
-                    note.addEventListener('click', () => {
-                        bringToFront(note);
-                        selectedNote = note;
-                        document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
-                        const selectedOption = Array.from(document.querySelectorAll('.color-option')).find(opt => opt.dataset.color === note.style.backgroundColor);
-                        if (selectedOption) {
-                            selectedOption.classList.add('selected');
-                        }
-                    });
-
-                    note.addEventListener('input', saveNotesState);
-                    note.addEventListener('dragstart', dragStart);
-                    note.addEventListener('dragend', dragEnd);
-
-                    document.body.appendChild(note);
+                const noteContent = document.createElement('div');
+                noteContent.classList.add('note-content');
+                noteContent.contentEditable = true;
+                noteContent.innerHTML = content;
+                noteContent.addEventListener('input', () => {
+                    noteContent.style.textAlign = 'center';
+                    noteContent.style.fontWeight = 'bold';
                 });
 
-                state.stickers.forEach(stickerData => {
-                    const sticker = document.getElementById(stickerData.id);
-                    sticker.style.top = stickerData.position.top;
-                    sticker.style.left = stickerData.position.left;
+                note.appendChild(deleteBtn);
+                note.appendChild(noteContent);
+
+                note.addEventListener('click', () => {
+                    bringToFront(note);
+                    selectedNote = note;
+                    document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+                    const selectedOption = Array.from(document.querySelectorAll('.color-option')).find(opt => opt.dataset.color === note.style.backgroundColor);
+                    if (selectedOption) {
+                        selectedOption.classList.add('selected');
+                    }
                 });
-            }
+
+                note.addEventListener('input', saveNotesState);
+                note.addEventListener('dragstart', dragStart);
+                note.addEventListener('dragend', dragEnd);
+
+                document.body.appendChild(note);
+                bringToFront(note);
+            });
         }
 
         window.onload = loadNotesState;
     </script>
 </body>
-
 </html>
