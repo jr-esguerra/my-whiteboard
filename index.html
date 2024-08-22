@@ -28,7 +28,7 @@
         }
         #tab-container {
             position: fixed;
-            top: 60px;
+            top: 60px; /* Adjusted to align below the banner */
             left: 0;
             width: 100%;
             display: flex;
@@ -38,6 +38,7 @@
             background-color: #eee;
             border-bottom: 1px solid #ddd;
             padding: 5px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
         }
         .tab {
             display: inline-block;
@@ -466,7 +467,6 @@
             const boards = JSON.parse(localStorage.getItem('boards') || '[]');
             boards.forEach(board => addTab(board.id));
         })();
-
     </script>
 </body>
 </html>
