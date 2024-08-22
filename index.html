@@ -34,7 +34,7 @@
             border-radius: 8px;
             position: absolute;
             cursor: move;
-            z-index: 1;
+            z-index: 1; /* Default z-index for new notes */
             overflow: hidden;
             box-sizing: border-box;
             font-family: 'Helvetica', sans-serif;
@@ -60,7 +60,7 @@
         }
         .note-content {
             width: 100%;
-            height: calc(100% - 10px); /* Adjusted to fill the sticky note */
+            height: calc(100% - 10px);
             box-sizing: border-box;
             text-align: center;
             font-weight: bold;
@@ -168,6 +168,7 @@
             note.style.backgroundColor = selectedColor;
             note.setAttribute('draggable', true);
             note.setAttribute('id', `note-${noteId++}`);
+            note.style.zIndex = 1000; // Ensure new notes are on top
 
             const deleteBtn = document.createElement('button');
             deleteBtn.classList.add('delete-btn');
@@ -205,8 +206,12 @@
         }
 
         function bringToFront(note) {
-            document.querySelectorAll('.note').forEach(n => n.style.zIndex = 1);
-            note.style.zIndex = 10;
+            document.querySelectorAll('.note').forEach(n => {
+                if (n !== note) {
+                    n.style.zIndex = 1; // Lower z-index for all other notes
+                }
+            });
+            note.style.zIndex = 1000; // Bring the selected note to the front
         }
 
         function deleteNote(note) {
@@ -241,21 +246,6 @@
             bringToFront(e.target);
             saveNotesState();
         }
-
-        document.body.addEventListener('dragover', function(e) {
-            e.preventDefault();
-        });
-
-        document.body.addEventListener('drop', function(e) {
-            e.preventDefault();
-            const id = e.dataTransfer.getData('text');
-            const note = document.getElementById(id);
-            note.style.top = `${e.clientY - 75}px`;
-            note.style.left = `${e.clientX - 75}px`;
-
-            bringToFront(note);
-            saveNotesState();
-        });
 
         function saveNotesState() {
             const notes = Array.from(document.querySelectorAll('.note')).map(note => ({
