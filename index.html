@@ -28,8 +28,20 @@
             align-items: center;
         }
 
-        #toolbar button {
+        #toolbar button, #toolbar .color-option {
             margin: 0 5px;
+        }
+
+        #toolbar .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+
+        #toolbar .color-option.selected {
+            border-color: #000;
         }
 
         #board-selector {
@@ -64,6 +76,7 @@
             border-radius: 5px;
             overflow: auto;
             background: #fff;
+            display: none; /* Hide boards initially */
         }
 
         .note {
@@ -75,6 +88,7 @@
             text-align: center;
             min-width: 100px;
             min-height: 100px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
         }
 
         .note-content {
@@ -84,6 +98,9 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            font-weight: bold;
+            text-align: center;
+            box-sizing: border-box;
         }
 
         .star {
@@ -118,11 +135,11 @@
         <h1>٩(◕‿◕｡)۶</h1>
     </header>
     <div id="toolbar">
-        <button class="color-option" data-color="#FFC0CB"></button> <!-- Pink -->
-        <button class="color-option" data-color="#E0BBE4"></button> <!-- Purple -->
-        <button class="color-option" data-color="#A2C2E0"></button> <!-- Blue -->
-        <button class="color-option" data-color="#A9DFBF"></button> <!-- Green -->
-        <button class="color-option" data-color="#FAD02E"></button> <!-- Orange -->
+        <button class="color-option" data-color="#FFC0CB" style="background-color: #FFC0CB;"></button> <!-- Pink -->
+        <button class="color-option" data-color="#E0BBE4" style="background-color: #E0BBE4;"></button> <!-- Purple -->
+        <button class="color-option" data-color="#A2C2E0" style="background-color: #A2C2E0;"></button> <!-- Blue -->
+        <button class="color-option" data-color="#A9DFBF" style="background-color: #A9DFBF;"></button> <!-- Green -->
+        <button class="color-option" data-color="#FAD02E" style="background-color: #FAD02E;"></button> <!-- Orange -->
         <button id="clear-canvas">Clear Canvas</button>
         <button id="new-board">New Board</button>
         <div id="board-selector">
