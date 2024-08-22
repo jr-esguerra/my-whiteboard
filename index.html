@@ -173,11 +173,11 @@
         function addStickyNote() {
             const note = document.createElement('div');
             note.classList.add('note');
-            note.style.top = ${(window.innerHeight / 2) - 75}px;
-            note.style.left = ${(window.innerWidth / 2) - 75}px;
+            note.style.top = `${(window.innerHeight / 2) - 75}px`;
+            note.style.left = `${(window.innerWidth / 2) - 75}px`;
             note.style.backgroundColor = selectedColor;
             note.setAttribute('draggable', true);
-            note.setAttribute('id', note-${noteId++});
+            note.setAttribute('id', `note-${noteId++}`);
 
             const deleteBtn = document.createElement('button');
             deleteBtn.classList.add('delete-btn');
@@ -254,8 +254,8 @@
 
         function dragEnd(e) {
             e.target.style.display = 'block';
-            e.target.style.top = ${e.clientY - 75}px;
-            e.target.style.left = ${e.clientX - 75}px;
+            e.target.style.top = `${e.clientY - 75}px`;
+            e.target.style.left = `${e.clientX - 75}px`;
 
             bringToFront(e.target);
             saveNotesState();
@@ -269,8 +269,8 @@
             e.preventDefault();
             const id = e.dataTransfer.getData('text');
             const note = document.getElementById(id);
-            note.style.top = ${e.clientY - 75}px;
-            note.style.left = ${e.clientX - 75}px;
+            note.style.top = `${e.clientY - 75}px`;
+            note.style.left = `${e.clientX - 75}px`;
 
             bringToFront(note);
             saveNotesState();
