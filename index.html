@@ -28,7 +28,7 @@
         }
         #tab-container {
             position: fixed;
-            top: 60px; /* Adjusted to align below the banner */
+            top: 60px; /* Align below the banner */
             left: 0;
             width: 100%;
             display: flex;
@@ -252,8 +252,8 @@
             const board = document.getElementById(boardId);
             const note = document.createElement('div');
             note.classList.add('note');
-            note.style.top = `${(window.innerHeight / 2) - 75}px`;
-            note.style.left = `${(window.innerWidth / 2) - 75}px`;
+            note.style.top = '50px'; // Default position
+            note.style.left = '50px'; // Default position
             note.style.backgroundColor = selectedColor;
             note.setAttribute('draggable', true);
             note.setAttribute('id', `note-${noteId++}`);
