@@ -44,23 +44,6 @@
             justify-content: center;
             z-index: 2; /* Ensure it is above content */
         }
-        .note .color-change-btn {
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-            cursor: pointer;
-            font-size: 12px;
-            background-color: gray;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2; /* Ensure it is above content */
-        }
         #toolbar {
             position: fixed;
             top: 10px;
@@ -90,15 +73,27 @@
             border-radius: 50%;
             cursor: pointer;
             border: 2px solid transparent;
+            position: relative;
         }
         .color-option.selected {
             border-color: #007bff;
+        }
+        .color-option.selected::after {
+            content: '\2713'; /* Check-mark Unicode character */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #007bff;
+            font-size: 18px;
         }
         .note-content {
             width: 100%;
             height: 100%;
             overflow: auto;
             box-sizing: border-box; /* Ensures padding is included in the element's total width and height */
+            text-align: center;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -116,6 +111,7 @@
     <script>
         let noteId = 0;
         let selectedColor = '#ffd1dc'; // Default color
+        let selectedNote = null;
 
         const addNoteBtn = document.getElementById('addNoteBtn');
         const clearCanvasBtn = document.getElementById('clearCanvasBtn');
@@ -128,6 +124,10 @@
                 document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
                 option.classList.add('selected');
                 selectedColor = option.dataset.color;
+                if (selectedNote) {
+                    selectedNote.style.backgroundColor = selectedColor;
+                    saveNotesState();
+                }
             });
         });
 
@@ -145,42 +145,47 @@
             deleteBtn.innerHTML = '&times;';
             deleteBtn.addEventListener('click', () => deleteNote(note));
 
-            const colorChangeBtn = document.createElement('button');
-            colorChangeBtn.classList.add('color-change-btn');
-            colorChangeBtn.innerHTML = '&#9881;';
-            colorChangeBtn.addEventListener('click', () => changeNoteColor(note));
-
             const noteContent = document.createElement('div');
             noteContent.classList.add('note-content');
             noteContent.contentEditable = true;
+            noteContent.addEventListener('input', () => {
+                noteContent.style.textAlign = 'center';
+                noteContent.style.fontWeight = 'bold';
+            });
 
             note.appendChild(deleteBtn);
-            note.appendChild(colorChangeBtn);
             note.appendChild(noteContent);
 
-            note.addEventListener('click', bringToFront);
+            note.addEventListener('click', () => {
+                bringToFront(note);
+                selectedNote = note;
+                document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+                const selectedOption = Array.from(document.querySelectorAll('.color-option')).find(opt => opt.dataset.color === note.style.backgroundColor);
+                if (selectedOption) {
+                    selectedOption.classList.add('selected');
+                }
+            });
+
             note.addEventListener('input', saveNotesState);
             note.addEventListener('dragstart', dragStart);
             note.addEventListener('dragend', dragEnd);
 
             document.body.appendChild(note);
-            bringToFront({ target: note });
+            bringToFront(note);
             saveNotesState();
         }
 
-        function bringToFront(e) {
-            document.querySelectorAll('.note').forEach(note => note.style.zIndex = 1);
-            e.target.style.zIndex = 10;
+        function bringToFront(note) {
+            document.querySelectorAll('.note').forEach(n => n.style.zIndex = 1);
+            note.style.zIndex = 10;
         }
 
         function deleteNote(note) {
             note.remove();
-            saveNotesState();
-        }
-
-        function changeNoteColor(note) {
-            const newColor = selectedColor;
-            note.style.backgroundColor = newColor;
+            if (selectedNote === note) {
+                selectedNote = null;
+                document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+            }
             saveNotesState();
         }
 
@@ -189,6 +194,8 @@
             if (confirmation) {
                 document.querySelectorAll('.note').forEach(note => note.remove());
                 localStorage.removeItem('notesData');
+                selectedNote = null;
+                document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
             }
         }
 
@@ -221,26 +228,30 @@
                     deleteBtn.innerHTML = '&times;';
                     deleteBtn.addEventListener('click', () => deleteNote(note));
 
-                    const colorChangeBtn = document.createElement('button');
-                    colorChangeBtn.classList.add('color-change-btn');
-                    colorChangeBtn.innerHTML = '&#9881;';
-                    colorChangeBtn.addEventListener('click', () => changeNoteColor(note));
-
                     const noteContent = document.createElement('div');
                     noteContent.classList.add('note-content');
                     noteContent.contentEditable = true;
                     noteContent.innerHTML = noteData.content;
 
                     note.appendChild(deleteBtn);
-                    note.appendChild(colorChangeBtn);
                     note.appendChild(noteContent);
 
-                    note.addEventListener('click', bringToFront);
+                    note.addEventListener('click', () => {
+                        bringToFront(note);
+                        selectedNote = note;
+                        document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+                        const selectedOption = Array.from(document.querySelectorAll('.color-option')).find(opt => opt.dataset.color === note.style.backgroundColor);
+                        if (selectedOption) {
+                            selectedOption.classList.add('selected');
+                        }
+                    });
+
                     note.addEventListener('input', saveNotesState);
                     note.addEventListener('dragstart', dragStart);
                     note.addEventListener('dragend', dragEnd);
 
                     document.body.appendChild(note);
+                    bringToFront(note);
                 });
             }
         }
@@ -257,7 +268,7 @@
             e.target.style.top = `${e.clientY - 75}px`;
             e.target.style.left = `${e.clientX - 75}px`;
 
-            bringToFront({ target: e.target });
+            bringToFront(e.target);
             saveNotesState();
         }
 
@@ -272,7 +283,7 @@
             note.style.top = `${e.clientY - 75}px`;
             note.style.left = `${e.clientX - 75}px`;
 
-            bringToFront({ target: note });
+            bringToFront(note);
             saveNotesState();
         });
 
