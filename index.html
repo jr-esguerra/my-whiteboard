@@ -10,8 +10,21 @@
             padding: 0;
             height: 100%;
             overflow: hidden;
-            font-family: 'Helvetica Neue', sans-serif;
+            font-family: 'Helvetica', sans-serif;
             background-color: #f4f4f4;
+        }
+        #banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-size: 24px;
+            z-index: 2;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .note {
             width: 150px;
@@ -22,31 +35,51 @@
             position: absolute;
             cursor: move;
             z-index: 1;
-            overflow: auto;
-            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            box-sizing: border-box;
+            font-family: 'Helvetica', sans-serif;
             font-size: 14px;
-            box-sizing: border-box; /* Ensures padding is included in the element's total width and height */
+        }
+        .note .delete-btn, .note .star-btn {
+            position: absolute;
+            font-size: 14px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: white;
+            z-index: 2;
         }
         .note .delete-btn {
-            position: absolute;
             top: 5px;
             right: 5px;
-            cursor: pointer;
-            font-size: 12px;
             background-color: red;
-            color: white;
-            border: none;
-            border-radius: 50%;
             width: 20px;
             height: 20px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 2; /* Ensure it is above content */
+        }
+        .note .star-btn {
+            bottom: 5px;
+            right: 5px;
+            font-size: 18px;
+            color: gold;
+        }
+        .note-content {
+            width: 100%;
+            height: calc(100% - 30px); /* Adjusted to accommodate the star and delete buttons */
+            overflow: auto;
+            box-sizing: border-box;
+            text-align: center;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         #toolbar {
             position: fixed;
-            top: 10px;
+            top: 60px;
             left: 10px;
             z-index: 2;
             background-color: #fff;
@@ -87,17 +120,22 @@
             color: #007bff;
             font-size: 18px;
         }
-        .note-content {
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            box-sizing: border-box; /* Ensures padding is included in the element's total width and height */
-            text-align: center;
-            font-weight: bold;
+        .star-btn.rainbow {
+            animation: rainbow 2s infinite;
+        }
+        @keyframes rainbow {
+            0% { color: red; }
+            16% { color: orange; }
+            33% { color: yellow; }
+            50% { color: green; }
+            66% { color: blue; }
+            83% { color: indigo; }
+            100% { color: violet; }
         }
     </style>
 </head>
 <body>
+    <div id="banner">٩(◕‿◕｡)۶</div>
     <div id="toolbar">
         <button id="addNoteBtn">Add Sticky Note</button>
         <button id="clearCanvasBtn">Clear Canvas</button>
@@ -134,8 +172,8 @@
         function addStickyNote() {
             const note = document.createElement('div');
             note.classList.add('note');
-            note.style.top = `${Math.random() * (window.innerHeight - 200)}px`;
-            note.style.left = `${Math.random() * (window.innerWidth - 200)}px`;
+            note.style.top = `${(window.innerHeight / 2) - 75}px`;
+            note.style.left = `${(window.innerWidth / 2) - 75}px`;
             note.style.backgroundColor = selectedColor;
             note.setAttribute('draggable', true);
             note.setAttribute('id', `note-${noteId++}`);
@@ -144,6 +182,13 @@
             deleteBtn.classList.add('delete-btn');
             deleteBtn.innerHTML = '&times;';
             deleteBtn.addEventListener('click', () => deleteNote(note));
+
+            const starBtn = document.createElement('button');
+            starBtn.classList.add('star-btn');
+            starBtn.innerHTML = '⭐';
+            starBtn.addEventListener('click', () => {
+                starBtn.classList.toggle('rainbow');
+            });
 
             const noteContent = document.createElement('div');
             noteContent.classList.add('note-content');
@@ -154,6 +199,7 @@
             });
 
             note.appendChild(deleteBtn);
+            note.appendChild(starBtn);
             note.appendChild(noteContent);
 
             note.addEventListener('click', () => {
@@ -193,66 +239,7 @@
             const confirmation = confirm("Are you sure you want to delete all sticky notes?");
             if (confirmation) {
                 document.querySelectorAll('.note').forEach(note => note.remove());
-                localStorage.removeItem('notesData');
-                selectedNote = null;
-                document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
-            }
-        }
-
-        function saveNotesState() {
-            const notes = document.querySelectorAll('.note');
-            const notesData = Array.from(notes).map(note => ({
-                id: note.id,
-                content: note.querySelector('.note-content').innerHTML,
-                top: note.style.top,
-                left: note.style.left,
-                backgroundColor: note.style.backgroundColor
-            }));
-            localStorage.setItem('notesData', JSON.stringify(notesData));
-        }
-
-        function loadNotesState() {
-            const savedNotesData = JSON.parse(localStorage.getItem('notesData'));
-            if (savedNotesData) {
-                savedNotesData.forEach(noteData => {
-                    const note = document.createElement('div');
-                    note.classList.add('note');
-                    note.style.top = noteData.top;
-                    note.style.left = noteData.left;
-                    note.style.backgroundColor = noteData.backgroundColor;
-                    note.setAttribute('draggable', true);
-                    note.setAttribute('id', noteData.id);
-
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.classList.add('delete-btn');
-                    deleteBtn.innerHTML = '&times;';
-                    deleteBtn.addEventListener('click', () => deleteNote(note));
-
-                    const noteContent = document.createElement('div');
-                    noteContent.classList.add('note-content');
-                    noteContent.contentEditable = true;
-                    noteContent.innerHTML = noteData.content;
-
-                    note.appendChild(deleteBtn);
-                    note.appendChild(noteContent);
-
-                    note.addEventListener('click', () => {
-                        bringToFront(note);
-                        selectedNote = note;
-                        document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
-                        const selectedOption = Array.from(document.querySelectorAll('.color-option')).find(opt => opt.dataset.color === note.style.backgroundColor);
-                        if (selectedOption) {
-                            selectedOption.classList.add('selected');
-                        }
-                    });
-
-                    note.addEventListener('input', saveNotesState);
-                    note.addEventListener('dragstart', dragStart);
-                    note.addEventListener('dragend', dragEnd);
-
-                    document.body.appendChild(note);
-                    bringToFront(note);
-                });
+                saveNotesState();
             }
         }
 
@@ -286,6 +273,76 @@
             bringToFront(note);
             saveNotesState();
         });
+
+        function saveNotesState() {
+            const notes = Array.from(document.querySelectorAll('.note')).map(note => ({
+                id: note.id,
+                top: note.style.top,
+                left: note.style.left,
+                backgroundColor: note.style.backgroundColor,
+                content: note.querySelector('.note-content').innerHTML
+            }));
+            localStorage.setItem('notes', JSON.stringify(notes));
+        }
+
+        function loadNotesState() {
+            const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+            notes.forEach(noteData => {
+                const note = document.createElement('div');
+                note.classList.add('note');
+                note.style.top = noteData.top;
+                note.style.left = noteData.left;
+                note.style.backgroundColor = noteData.backgroundColor;
+                note.setAttribute('draggable', true);
+                note.setAttribute('id', noteData.id);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.classList.add('delete-btn');
+                deleteBtn.innerHTML = '&times;';
+                deleteBtn.addEventListener('click', () => deleteNote(note));
+
+                const starBtn = document.createElement('button');
+                starBtn.classList.add('star-btn');
+                starBtn.innerHTML = '⭐';
+                if (noteData.isStarred) {
+                    starBtn.classList.add('rainbow');
+                }
+                starBtn.addEventListener('click', () => {
+                    starBtn.classList.toggle('rainbow');
+                    saveNotesState();
+                });
+
+                const noteContent = document.createElement('div');
+                noteContent.classList.add('note-content');
+                noteContent.contentEditable = true;
+                noteContent.innerHTML = noteData.content;
+                noteContent.addEventListener('input', () => {
+                    noteContent.style.textAlign = 'center';
+                    noteContent.style.fontWeight = 'bold';
+                });
+
+                note.appendChild(deleteBtn);
+                note.appendChild(starBtn);
+                note.appendChild(noteContent);
+
+                note.addEventListener('click', () => {
+                    bringToFront(note);
+                    selectedNote = note;
+                    document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+                    const selectedOption = Array.from(document.querySelectorAll('.color-option')).find(opt => opt.dataset.color === note.style.backgroundColor);
+                    if (selectedOption) {
+                        selectedOption.classList.add('selected');
+                    }
+                });
+
+                note.addEventListener('input', saveNotesState);
+                note.addEventListener('dragstart', dragStart);
+                note.addEventListener('dragend', dragEnd);
+
+                document.body.appendChild(note);
+                bringToFront(note);
+            });
+        }
 
         // Load sticky notes on page load
         loadNotesState();
