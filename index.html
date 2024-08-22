@@ -40,16 +40,8 @@
             font-family: 'Helvetica', sans-serif;
             font-size: 14px;
         }
-        .note .delete-btn, .note .star-btn {
-            position: absolute;
-            font-size: 14px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: white;
-            z-index: 2;
-        }
         .note .delete-btn {
+            position: absolute;
             top: 5px;
             right: 5px;
             background-color: red;
@@ -59,16 +51,16 @@
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-        .note .star-btn {
-            bottom: 5px;
-            right: 5px;
-            font-size: 18px;
-            color: gold;
+            font-size: 14px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: white;
+            z-index: 2;
         }
         .note-content {
             width: 100%;
-            height: calc(100% - 30px); /* Adjusted to accommodate the star and delete buttons */
+            height: calc(100% - 30px); /* Adjusted to accommodate the delete button */
             overflow: auto;
             box-sizing: border-box;
             text-align: center;
@@ -119,19 +111,6 @@
             transform: translate(-50%, -50%);
             color: #007bff;
             font-size: 18px;
-        }
-        .star-btn.rainbow {
-            animation: rainbow 2s infinite;
-        }
-        @keyframes rainbow {
-            0% { color: red; }
-            14% { color: orange; }
-            28% { color: yellow; }
-            42% { color: green; }
-            57% { color: blue; }
-            71% { color: indigo; }
-            85% { color: violet; }
-            100% { color: red; }
         }
     </style>
 </head>
@@ -184,14 +163,6 @@
             deleteBtn.innerHTML = '&times;';
             deleteBtn.addEventListener('click', () => deleteNote(note));
 
-            const starBtn = document.createElement('button');
-            starBtn.classList.add('star-btn');
-            starBtn.innerHTML = '⭐';
-            starBtn.addEventListener('click', () => {
-                starBtn.classList.toggle('rainbow');
-                saveNotesState();
-            });
-
             const noteContent = document.createElement('div');
             noteContent.classList.add('note-content');
             noteContent.contentEditable = true;
@@ -201,7 +172,6 @@
             });
 
             note.appendChild(deleteBtn);
-            note.appendChild(starBtn);
             note.appendChild(noteContent);
 
             note.addEventListener('click', () => {
@@ -282,50 +252,37 @@
                 top: note.style.top,
                 left: note.style.left,
                 backgroundColor: note.style.backgroundColor,
-                content: note.querySelector('.note-content').innerHTML,
-                isStarred: note.querySelector('.star-btn').classList.contains('rainbow')
+                content: note.querySelector('.note-content').innerHTML
             }));
             localStorage.setItem('notes', JSON.stringify(notes));
         }
 
         function loadNotesState() {
             const notes = JSON.parse(localStorage.getItem('notes') || '[]');
-            notes.forEach(noteData => {
+            notes.forEach(({ id, top, left, backgroundColor, content }) => {
                 const note = document.createElement('div');
                 note.classList.add('note');
-                note.style.top = noteData.top;
-                note.style.left = noteData.left;
-                note.style.backgroundColor = noteData.backgroundColor;
+                note.style.top = top;
+                note.style.left = left;
+                note.style.backgroundColor = backgroundColor;
                 note.setAttribute('draggable', true);
-                note.setAttribute('id', noteData.id);
+                note.setAttribute('id', id);
 
                 const deleteBtn = document.createElement('button');
                 deleteBtn.classList.add('delete-btn');
                 deleteBtn.innerHTML = '&times;';
                 deleteBtn.addEventListener('click', () => deleteNote(note));
 
-                const starBtn = document.createElement('button');
-                starBtn.classList.add('star-btn');
-                starBtn.innerHTML = '⭐';
-                if (noteData.isStarred) {
-                    starBtn.classList.add('rainbow');
-                }
-                starBtn.addEventListener('click', () => {
-                    starBtn.classList.toggle('rainbow');
-                    saveNotesState();
-                });
-
                 const noteContent = document.createElement('div');
                 noteContent.classList.add('note-content');
                 noteContent.contentEditable = true;
-                noteContent.innerHTML = noteData.content;
+                noteContent.innerHTML = content;
                 noteContent.addEventListener('input', () => {
                     noteContent.style.textAlign = 'center';
                     noteContent.style.fontWeight = 'bold';
                 });
 
                 note.appendChild(deleteBtn);
-                note.appendChild(starBtn);
                 note.appendChild(noteContent);
 
                 note.addEventListener('click', () => {
@@ -347,8 +304,7 @@
             });
         }
 
-        // Load sticky notes on page load
-        loadNotesState();
+        window.onload = loadNotesState;
     </script>
 </body>
 </html>
